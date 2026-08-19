@@ -27,8 +27,8 @@ android {
         applicationId = "app.vidsnap.mobile"
         minSdk = 23
         targetSdk = 34
-        versionCode = flutter.versionCode.toInt()
-        versionName = flutter.versionName
+        versionCode = flutter.versionCode().toInt()
+        versionName = flutter.versionName()
     }
 
     signingConfigs {
