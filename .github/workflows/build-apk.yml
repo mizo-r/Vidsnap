@@ -61,9 +61,6 @@ jobs:
             exit 1;
           }
 
-      - name: Generate launcher icons
-        run: dart run flutter_launcher_icons || true
-
       - name: Analyze code (warnings don't fail)
         run: flutter analyze || true
 
