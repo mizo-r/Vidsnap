@@ -1,0 +1,143 @@
+name: Build APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.22.3'
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Ensure gradle-wrapper.jar exists
+        run: |
+          if [ ! -f android/gradle/wrapper/gradle-wrapper.jar ]; then
+            echo "gradle-wrapper.jar missing — downloading from Gradle 8.7 release…"
+            curl -sSL -o android/gradle/wrapper/gradle-wrapper.jar \
+              https://raw.githubusercontent.com/gradle/gradle/v8.7.0/gradle/wrapper/gradle-wrapper.jar
+            ls -la android/gradle/wrapper/gradle-wrapper.jar
+          fi
+
+      - name: Download Flutter dependencies
+        run: flutter pub get
+
+      - name: Generate localization files
+        run: flutter gen-l10n
+
+      - name: Verify localization generated
+        run: |
+          ls -la lib/l10n/gen/ || true
+          test -f lib/l10n/gen/app_localizations.dart || {
+            echo "ERROR: app_localizations.dart was not generated";
+            exit 1;
+          }
+
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons || true
+
+      - name: Analyze code (warnings don't fail)
+        run: flutter analyze || true
+
+      - name: Prepare signing keystore
+        id: keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD_SECR: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS_SECR: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD_SECR: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          # Create key.properties for the Gradle build.
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Using user-provided keystore from GitHub Secrets."
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/vidsnap.jks
+            cat > android/key.properties <<EOF
+          storeFile=vidsnap.jks
+          storePassword=$KEYSTORE_PASSWORD_SECR
+          keyAlias=$KEY_ALIAS_SECR
+          keyPassword=$KEY_PASSWORD_SECR
+          EOF
+          else
+            echo "No keystore secret found — generating a fresh self-signed keystore for this run."
+            keytool -genkey -v \
+              -keystore android/app/vidsnap.jks \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -alias vidsnap \
+              -dname "CN=VidSnap, OU=Mobile, O=VidSnap, L=Default, S=Default, C=US" \
+              -storepass vidsnap -keypass vidsnap
+            cat > android/key.properties <<EOF
+          storeFile=vidsnap.jks
+          storePassword=vidsnap
+          keyAlias=vidsnap
+          keyPassword=vidsnap
+          EOF
+          fi
+          echo "Keystore ready."
+
+      - name: Build release APK
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: List build output
+        run: ls -la build/app/outputs/flutter-apk/
+
+      - name: Rename APK with version + commit
+        id: rename
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d '+' -f 1)
+          COMMIT_SHORT=${GITHUB_SHA::7}
+          TIMESTAMP=$(date -u +%Y%m%d%H%M)
+          NEW_NAME="vidsnap-v${VERSION}-${COMMIT_SHORT}.apk"
+          cp build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/$NEW_NAME"
+          echo "apk_path=build/app/outputs/flutter-apk/$NEW_NAME" >> $GITHUB_OUTPUT
+          echo "apk_name=$NEW_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Renamed to: $NEW_NAME"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vidsnap-apk
+          path: app/build/app/outputs/flutter-apk/*.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Create GitHub Release on tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: VidSnap ${{ github.ref_name }}
+          generate_release_notes: true
+          files: app/${{ steps.rename.outputs.apk_path }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
