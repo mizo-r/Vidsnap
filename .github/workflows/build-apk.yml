@@ -10,6 +10,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Required for creating GitHub Releases on tag push.
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Release APK
