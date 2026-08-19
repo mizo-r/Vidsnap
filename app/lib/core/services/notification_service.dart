@@ -32,7 +32,6 @@ class NotificationService {
             AppConstants.notifChannelName,
             description: AppConstants.notifChannelDesc,
             importance: Importance.low,
-            showProgress: true,
           ),
         );
     _initialized = true;

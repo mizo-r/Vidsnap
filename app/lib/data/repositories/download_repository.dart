@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive/hive.dart';
 import 'package:vidsnap/data/models/download_task.dart';
 import 'package:vidsnap/data/repositories/storage_service.dart';
 

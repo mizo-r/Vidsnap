@@ -147,13 +147,14 @@ class DownloadService {
     final safeName = _sanitizeFileName(task.customFileName);
     final filePath = p.join(dir.path, '$safeName.${task.extension}');
     final file = File(filePath);
-    final sink = file.openWrite(mode: FileMode.writeOnlyAppend);
 
     int downloaded = task.downloadedBytes;
     final headers = <String, dynamic>{};
     if (downloaded > 0) {
       headers[HttpHeaders.rangeHeader] = 'bytes=$downloaded-';
     }
+
+    IOSink sink = file.openWrite(mode: FileMode.writeOnlyAppend);
 
     try {
       final response = await dio.get<ResponseBody>(

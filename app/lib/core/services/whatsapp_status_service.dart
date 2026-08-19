@@ -46,8 +46,8 @@ class WhatsAppStatusService {
   }
 
   /// Opens the system settings page so the user can grant the permission manually.
-  Future<void> openAppSettings() async {
-    await openSettings();
+  Future<void> openAppSettingsPage() async {
+    await openAppSettings();
   }
 
   /// Lists statuses (images + videos) for either WhatsApp or WhatsApp Business.

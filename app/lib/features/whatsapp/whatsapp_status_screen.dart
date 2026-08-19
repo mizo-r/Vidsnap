@@ -81,7 +81,7 @@ class _WhatsAppStatusScreenState extends ConsumerState<WhatsAppStatusScreen>
     final granted = await service.requestPermission();
     if (!granted) {
       if (mounted) {
-        await service.openAppSettings();
+        await service.openAppSettingsPage();
       }
       return;
     }
@@ -120,7 +120,6 @@ class _WhatsAppStatusScreenState extends ConsumerState<WhatsAppStatusScreen>
           Switch(
             value: _business,
             onChanged: _toggleBusiness,
-            activeThumbColor: VidSnapColors.accent,
           ),
           const SizedBox(width: 8),
         ],
@@ -140,7 +139,7 @@ class _WhatsAppStatusScreenState extends ConsumerState<WhatsAppStatusScreen>
               ext: ext,
               l10n: l10n,
               onRequest: _requestPermission,
-              onOpenSettings: () => ref.read(whatsappStatusServiceProvider).openAppSettings(),
+              onOpenSettings: () => ref.read(whatsappStatusServiceProvider).openAppSettingsPage(),
             );
           }
           return Center(

@@ -78,7 +78,7 @@ class _VidSnapAppState extends ConsumerState<VidSnapApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      routerConfig: buildRouter(ref),
+      routerConfig: buildRouter(),
       builder: (context, child) {
         // Update clipboard monitor when settings change.
         final s = ref.watch(currentSettingsProvider);
