@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:vidsnap/core/services/extraction_service.dart';
 import 'package:vidsnap/data/models/download_task.dart';
 import 'package:vidsnap/data/models/history_item.dart';
 import 'package:vidsnap/data/repositories/download_repository.dart';
@@ -19,12 +20,14 @@ class DownloadService {
     required this.downloadRepo,
     required this.historyRepo,
     required this.settingsRepo,
+    required this.extractionService,
   });
 
   final Dio dio;
   final DownloadRepository downloadRepo;
   final HistoryRepository historyRepo;
   final SettingsRepository settingsRepo;
+  final ExtractionService extractionService;
 
   final Map<String, CancelToken> _cancelTokens = {};
   final Map<String, StreamSubscription<List<int>>> _subscriptions = {};
@@ -238,6 +241,41 @@ class DownloadService {
       if (e is DioException && CancelToken.isCancel(e)) {
         // Paused or cancelled — no need to mark as failed.
       } else {
+        // Detect expired URL (403 Forbidden from CDN usually means the
+        // signed download URL has expired). Try to refresh it once.
+        final isExpiredUrl = e is DioException &&
+            (e.response?.statusCode == 403 ||
+                e.response?.statusCode == 410 ||
+                e.message?.contains('Forbidden') == true);
+
+        if (isExpiredUrl && task.retryCount < 2) {
+          // Re-extract a fresh download URL from the server, then restart.
+          try {
+            final fresh = await extractionService.extract(
+              serverUrl: settingsRepo.current.serverUrl,
+              videoUrl: task.originalUrl,
+            );
+            // Find a matching format (same formatId).
+            final match = fresh.formats.firstWhere(
+              (f) => f.formatId == task.formatId,
+              orElse: () => fresh.formats.firstWhere(
+                (f) => f.label == task.quality,
+                orElse: () => fresh.formats.first,
+              ),
+            );
+            task
+              ..downloadUrl = match.downloadUrl
+              ..retryCount = task.retryCount + 1
+              ..status = DownloadStatus.queued
+              ..errorMessage = null;
+            await downloadRepo.update(task);
+            _progressController.add(task);
+            _tryStartNext();
+            return;
+          } catch (_) {
+            // Re-extraction failed — fall through to mark as failed below.
+          }
+        }
         task
           ..status = DownloadStatus.failed
           ..errorMessage = e.toString();
@@ -292,6 +330,7 @@ final downloadServiceProvider = Provider<DownloadService>((ref) {
     downloadRepo: ref.watch(downloadRepositoryProvider),
     historyRepo: ref.watch(historyRepositoryProvider),
     settingsRepo: ref.watch(settingsRepositoryProvider),
+    extractionService: ref.watch(extractionServiceProvider),
   );
   ref.onDispose(service.dispose);
   return service;
