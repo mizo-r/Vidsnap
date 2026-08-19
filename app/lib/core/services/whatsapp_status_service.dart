@@ -106,35 +106,25 @@ class WhatsAppStatusService {
   Future<String?> saveToGallery(WhatsAppStatus status) async {
     try {
       final file = File(status.filePath);
-      final bytes = await file.readAsBytes();
 
-      // photo_manager wraps MediaStore on Android.
-      // We create a new asset of the appropriate type.
-      final requestType =
-          status.isVideo ? RequestType.video : RequestType.image;
+      if (status.isVideo) {
+        // Use saveVideo for videos — requires a File, not bytes.
+        final result = await PhotoManager.editor.saveVideo(
+          file,
+          title: 'vidsnap_${DateTime.now().millisecondsSinceEpoch}',
+        );
+        return result?.id;
+      }
+
+      // Use saveImage for images — requires bytes.
+      final bytes = await file.readAsBytes();
       final result = await PhotoManager.editor.saveImage(
         bytes,
         filename: 'vidsnap_${DateTime.now().millisecondsSinceEpoch}_${status.fileName}',
         title: 'vidsnap_${DateTime.now().millisecondsSinceEpoch}',
-        relativePath: status.isVideo ? 'Movies/VidSnap' : 'Pictures/VidSnap',
       );
-
-      // `saveImage` doesn't accept a type, so we use the right API per kind.
-      if (result != null) {
-        return result.id;
-      }
-
-      // Fallback: use saveImage for images, saveVideo for videos
-      if (status.isVideo) {
-        final videoResult = await PhotoManager.editor.saveVideo(
-          file,
-          title: 'vidsnap_${DateTime.now().millisecondsSinceEpoch}.${p.extension(status.filePath).replaceAll('.', '')}',
-          relativePath: 'Movies/VidSnap',
-        );
-        return videoResult?.id;
-      }
       return result?.id;
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }

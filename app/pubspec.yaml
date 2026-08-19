@@ -40,16 +40,11 @@ dependencies:
   intl: ^0.19.0
   share_plus: ^9.0.0
   url_launcher: ^6.3.0
-  flutter_clipboard_manager: ^0.0.4
   device_info_plus: ^10.1.0
   package_info_plus: ^8.0.0
   file_picker: ^8.0.5
   open_filex: ^4.4.0
   flutter_svg: ^2.0.10+1
-
-  # WhatsApp status saver helpers
-  external_path: ^1.0.3
-  flutter_foreground_task: ^8.5.0
 
 dev_dependencies:
   flutter_test:

@@ -255,10 +255,10 @@ class DownloadService {
     if (Platform.isAndroid) {
       final external = await getExternalStorageDirectory();
       if (external != null) {
-        // /storage/emulated/0/Android/data/<package>/files/<folder>
-        // Plan calls for Scoped Storage — this is the only path apps can write to without
-        // extra permissions on Android 11+.
-        final dir = Directory(p.join(external.parent.parent.parent.path, folder));
+        // On Android 11+ with Scoped Storage, apps can only write to their own
+        // package-specific external dir. Files saved here appear under
+        // /Android/data/<package>/files/<folder> — visible to file managers.
+        final dir = Directory(p.join(external.path, folder));
         if (!dir.existsSync()) dir.createSync(recursive: true);
         return dir;
       }
