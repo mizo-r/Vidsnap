@@ -176,6 +176,7 @@ class VidSnapColorsExtension extends ThemeExtension<VidSnapColorsExtension> {
     required this.accent,
     required this.success,
     required this.error,
+    this.warning = const Color(0xFFF39C12),
   });
 
   final Color background;
@@ -185,6 +186,7 @@ class VidSnapColorsExtension extends ThemeExtension<VidSnapColorsExtension> {
   final Color accent;
   final Color success;
   final Color error;
+  final Color warning;
 
   static VidSnapColorsExtension of(BuildContext context) =>
       Theme.of(context).extension<VidSnapColorsExtension>()!;
@@ -198,6 +200,7 @@ class VidSnapColorsExtension extends ThemeExtension<VidSnapColorsExtension> {
     Color? accent,
     Color? success,
     Color? error,
+    Color? warning,
   }) =>
       VidSnapColorsExtension(
         background: background ?? this.background,
@@ -207,6 +210,7 @@ class VidSnapColorsExtension extends ThemeExtension<VidSnapColorsExtension> {
         accent: accent ?? this.accent,
         success: success ?? this.success,
         error: error ?? this.error,
+        warning: warning ?? this.warning,
       );
 
   @override
@@ -220,6 +224,7 @@ class VidSnapColorsExtension extends ThemeExtension<VidSnapColorsExtension> {
       accent: Color.lerp(accent, other.accent, t)!,
       success: Color.lerp(success, other.success, t)!,
       error: Color.lerp(error, other.error, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
     );
   }
 }
