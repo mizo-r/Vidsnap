@@ -40,6 +40,9 @@
   "downloaderAudioTab": "Audio",
   "downloaderSaveFolder": "Save to",
   "downloaderEstimatedSize": "Estimated size",
+  "downloaderAudioSection": "Audio only",
+  "downloaderVideoSection": "Video",
+  "downloaderMergeRequired": "Merge",
 
   "downloadsActive": "Active",
   "downloadsCompleted": "Completed",
@@ -52,6 +55,7 @@
   "downloadsDelete": "Delete",
   "downloadsOpen": "Open",
   "downloadsShare": "Share",
+  "downloadsMerging": "Merging video + audio…",
   "downloadsClearCompleted": "Clear completed",
 
   "historyTitle": "History",
@@ -87,6 +91,16 @@
   "settingsVersion": "Version",
   "settingsClearData": "Clear all app data",
   "settingsClearDataConfirm": "Clear all local data? Downloads will not be deleted.",
+  "settingsStorage": "Storage",
+  "settingsClearCache": "Clear cache",
+  "settingsClearCacheConfirm": "Delete all temporary merge files and partial downloads?",
+  "settingsCacheSize": "Current cache size",
+  "settingsCacheCleared": "Cache cleared — {size} freed",
+  "@settingsCacheCleared": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
 
   "whatsappTitle": "WhatsApp Statuses",
   "whatsappTabImages": "Images",

@@ -1,7 +1,9 @@
 /// A download task — the central entity of the app.
 ///
-/// Stored locally in Hive via `DownloadTaskAdapter`. No `@HiveType` annotations
-/// are used to avoid requiring build_runner on CI.
+/// Supports two modes:
+///   1. Direct download: `downloadUrl` is set, file is downloaded as-is.
+///   2. Merge download: `videoUrl` + `audioUrl` are set, both are downloaded
+///      in parallel, then merged via FFmpeg into a single output file.
 class DownloadTask {
   DownloadTask({
     required this.id,
@@ -20,8 +22,16 @@ class DownloadTask {
     required this.createdAt,
     required this.retryCount,
     this.downloadUrl,
+    this.videoUrl,
+    this.audioUrl,
+    this.requiresMerge = false,
     this.thumbnailUrl,
     this.errorMessage,
+    this.mergePhase = false,
+    this.videoDownloadedBytes = 0,
+    this.audioDownloadedBytes = 0,
+    this.videoTotalBytes,
+    this.audioTotalBytes,
   });
 
   final String id;
@@ -39,14 +49,35 @@ class DownloadTask {
   String? filePath;
   final DateTime createdAt;
   int retryCount;
+
+  /// Direct download URL (used when requiresMerge = false).
   String? downloadUrl;
+
+  /// Video-only URL (used when requiresMerge = true).
+  String? videoUrl;
+
+  /// Audio-only URL (used when requiresMerge = true).
+  String? audioUrl;
+
+  /// True if the client must download video + audio separately and merge.
+  final bool requiresMerge;
+
   String? thumbnailUrl;
   String? errorMessage;
+
+  /// True while FFmpeg is merging the two streams.
+  bool mergePhase;
+
+  // Parallel download tracking
+  int videoDownloadedBytes;
+  int audioDownloadedBytes;
+  int? videoTotalBytes;
+  int? audioTotalBytes;
 
   bool get isCompleted => status == DownloadStatus.completed;
   bool get isFailed => status == DownloadStatus.failed;
   bool get isActive => status == DownloadStatus.queued || status == DownloadStatus.downloading;
-  bool get canPause => status == DownloadStatus.downloading;
+  bool get canPause => status == DownloadStatus.downloading && !mergePhase;
   bool get canResume => status == DownloadStatus.paused;
   bool get canRetry => status == DownloadStatus.failed;
 
@@ -58,6 +89,14 @@ class DownloadTask {
     String? filePath,
     int? retryCount,
     String? errorMessage,
+    bool? mergePhase,
+    int? videoDownloadedBytes,
+    int? audioDownloadedBytes,
+    int? videoTotalBytes,
+    int? audioTotalBytes,
+    String? downloadUrl,
+    String? videoUrl,
+    String? audioUrl,
   }) =>
       DownloadTask(
         id: id,
@@ -75,9 +114,17 @@ class DownloadTask {
         filePath: filePath ?? this.filePath,
         createdAt: createdAt,
         retryCount: retryCount ?? this.retryCount,
-        downloadUrl: downloadUrl,
+        downloadUrl: downloadUrl ?? this.downloadUrl,
+        videoUrl: videoUrl ?? this.videoUrl,
+        audioUrl: audioUrl ?? this.audioUrl,
+        requiresMerge: requiresMerge,
         thumbnailUrl: thumbnailUrl,
         errorMessage: errorMessage ?? this.errorMessage,
+        mergePhase: mergePhase ?? this.mergePhase,
+        videoDownloadedBytes: videoDownloadedBytes ?? this.videoDownloadedBytes,
+        audioDownloadedBytes: audioDownloadedBytes ?? this.audioDownloadedBytes,
+        videoTotalBytes: videoTotalBytes ?? this.videoTotalBytes,
+        audioTotalBytes: audioTotalBytes ?? this.audioTotalBytes,
       );
 }
 

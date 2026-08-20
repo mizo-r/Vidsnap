@@ -9,6 +9,7 @@ class ExtractResponse {
     required this.durationSeconds,
     required this.uploader,
     required this.formats,
+    required this.audioFormats,
   });
 
   final String sourceId;
@@ -19,6 +20,7 @@ class ExtractResponse {
   final int? durationSeconds;
   final String? uploader;
   final List<FormatOption> formats;
+  final List<AudioFormat> audioFormats;
 
   factory ExtractResponse.fromJson(Map<String, dynamic> json) => ExtractResponse(
         sourceId: json['sourceId'] as String,
@@ -30,6 +32,9 @@ class ExtractResponse {
         uploader: json['uploader'] as String?,
         formats: (json['formats'] as List)
             .map((e) => FormatOption.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        audioFormats: (json['audioFormats'] as List? ?? [])
+            .map((e) => AudioFormat.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 }
@@ -43,6 +48,9 @@ class FormatOption {
     required this.fileSizeBytes,
     required this.downloadUrl,
     this.recommended = false,
+    this.requiresMerge = false,
+    this.videoUrl,
+    this.audioUrl,
   });
 
   final String formatId;
@@ -52,6 +60,9 @@ class FormatOption {
   final int? fileSizeBytes;
   final String downloadUrl;
   final bool recommended;
+  final bool requiresMerge;
+  final String? videoUrl;
+  final String? audioUrl;
 
   factory FormatOption.fromJson(Map<String, dynamic> json) => FormatOption(
         formatId: json['formatId'] as String,
@@ -61,6 +72,36 @@ class FormatOption {
         fileSizeBytes: json['fileSizeBytes'] as int?,
         downloadUrl: json['downloadUrl'] as String,
         recommended: (json['recommended'] as bool?) ?? false,
+        requiresMerge: (json['requiresMerge'] as bool?) ?? false,
+        videoUrl: json['videoUrl'] as String?,
+        audioUrl: json['audioUrl'] as String?,
+      );
+}
+
+class AudioFormat {
+  const AudioFormat({
+    required this.formatId,
+    required this.label,
+    required this.extension,
+    required this.fileSizeBytes,
+    required this.downloadUrl,
+    this.abr,
+  });
+
+  final String formatId;
+  final String label;
+  final String extension;
+  final int? fileSizeBytes;
+  final String downloadUrl;
+  final int? abr;
+
+  factory AudioFormat.fromJson(Map<String, dynamic> json) => AudioFormat(
+        formatId: json['formatId'] as String,
+        label: json['label'] as String,
+        extension: json['extension'] as String,
+        fileSizeBytes: json['fileSizeBytes'] as int?,
+        downloadUrl: json['downloadUrl'] as String,
+        abr: json['abr'] as int?,
       );
 }
 

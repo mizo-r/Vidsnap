@@ -7,7 +7,8 @@ import 'package:vidsnap/data/models/extract_response.dart';
 import 'package:vidsnap/l10n/gen/app_localizations.dart';
 
 /// Modal bottom sheet that shows video info + quality picker + sticky download button.
-/// Implements the design spec from the project plan section 3.2.
+/// Two sections: Audio (top) and Video (bottom). Each section shows only the
+/// qualities that are actually available for this video.
 class DownloaderSheet extends ConsumerStatefulWidget {
   const DownloaderSheet({super.key, required this.response});
 
@@ -17,57 +18,122 @@ class DownloaderSheet extends ConsumerStatefulWidget {
   ConsumerState<DownloaderSheet> createState() => _DownloaderSheetState();
 }
 
-class _DownloaderSheetState extends ConsumerState<DownloaderSheet>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _DownloaderSheetState extends ConsumerState<DownloaderSheet> {
   final _nameController = TextEditingController();
-  FormatOption? _selected;
+
+  /// Currently selected format. Can be a video FormatOption or an AudioFormat.
+  /// `selectedAudioId` is set when an audio option is selected.
+  FormatOption? _selectedVideo;
+  AudioFormat? _selectedAudio;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _nameController.text = FormatUtils.sanitizeFileName(widget.response.title);
-    // Pre-select the recommended format, or the first muxed format available.
-    final formats = widget.response.formats;
-    _selected = formats.firstWhere((f) => f.recommended, orElse: () {
-      return formats.firstWhere(
-        (f) => f.kind == FormatKind.muxed,
-        orElse: () => formats.first,
+
+    // Pre-select recommended video (720p usually), else first available.
+    final videos = widget.response.formats;
+    if (videos.isNotEmpty) {
+      _selectedVideo = videos.firstWhere(
+        (f) => f.recommended,
+        orElse: () => videos.first,
       );
-    });
+    }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _nameController.dispose();
     super.dispose();
   }
 
-  List<FormatOption> get _videoFormats => widget.response.formats
-      .where((f) => f.kind != FormatKind.audio)
-      .toList();
-  List<FormatOption> get _audioFormats => widget.response.formats
-      .where((f) => f.kind == FormatKind.audio)
-      .toList();
-
   Future<void> _startDownload() async {
-    if (_selected == null) return;
     final fileName = FormatUtils.sanitizeFileName(_nameController.text);
-    await ref.read(downloadServiceProvider).enqueue(
-          sourceId: widget.response.sourceId,
-          originalUrl: widget.response.originalUrl,
-          videoTitle: widget.response.title,
-          customFileName: fileName.isEmpty ? widget.response.title : fileName,
-          formatId: _selected!.formatId,
-          quality: _selected!.label,
-          extension: _selected!.extension,
-          downloadUrl: _selected!.downloadUrl,
-          thumbnailUrl: widget.response.thumbnail,
-          totalBytes: _selected!.fileSizeBytes,
-        );
+    final safeName = fileName.isEmpty ? widget.response.title : fileName;
+
+    if (_selectedAudio != null) {
+      // Audio-only download
+      final a = _selectedAudio!;
+      await ref.read(downloadServiceProvider).enqueue(
+            sourceId: widget.response.sourceId,
+            originalUrl: widget.response.originalUrl,
+            videoTitle: widget.response.title,
+            customFileName: safeName,
+            formatId: a.formatId,
+            quality: a.label,
+            extension: a.extension,
+            downloadUrl: a.downloadUrl,
+            thumbnailUrl: widget.response.thumbnail,
+            totalBytes: a.fileSizeBytes,
+            requiresMerge: false,
+          );
+    } else if (_selectedVideo != null) {
+      final v = _selectedVideo!;
+      if (v.requiresMerge) {
+        // Merge download — find best audio from response
+        final bestAudio = widget.response.audioFormats.isNotEmpty
+            ? widget.response.audioFormats.first
+            : null;
+        if (bestAudio == null) {
+          // No audio available — can't merge
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No audio format available for merge'),
+                backgroundColor: VidSnapColors.error,
+              ),
+            );
+          }
+          return;
+        }
+        await ref.read(downloadServiceProvider).enqueue(
+              sourceId: widget.response.sourceId,
+              originalUrl: widget.response.originalUrl,
+              videoTitle: widget.response.title,
+              customFileName: safeName,
+              formatId: v.formatId,
+              quality: v.label,
+              extension: 'mp4',
+              downloadUrl: v.downloadUrl,
+              videoUrl: v.videoUrl,
+              audioUrl: bestAudio.downloadUrl,
+              thumbnailUrl: widget.response.thumbnail,
+              totalBytes: v.fileSizeBytes,
+              requiresMerge: true,
+              videoTotalBytes: v.fileSizeBytes,
+              audioTotalBytes: bestAudio.fileSizeBytes,
+            );
+      } else {
+        // Direct muxed download
+        await ref.read(downloadServiceProvider).enqueue(
+              sourceId: widget.response.sourceId,
+              originalUrl: widget.response.originalUrl,
+              videoTitle: widget.response.title,
+              customFileName: safeName,
+              formatId: v.formatId,
+              quality: v.label,
+              extension: v.extension,
+              downloadUrl: v.downloadUrl,
+              thumbnailUrl: widget.response.thumbnail,
+              totalBytes: v.fileSizeBytes,
+              requiresMerge: false,
+            );
+      }
+    } else {
+      return;
+    }
+
     if (mounted) Navigator.of(context).maybePop();
+  }
+
+  bool get _canDownload => _selectedAudio != null || _selectedVideo != null;
+
+  String get _selectedExtension {
+    if (_selectedAudio != null) return _selectedAudio!.extension;
+    if (_selectedVideo != null) {
+      return _selectedVideo!.requiresMerge ? 'mp4' : _selectedVideo!.extension;
+    }
+    return '';
   }
 
   @override
@@ -82,7 +148,7 @@ class _DownloaderSheetState extends ConsumerState<DownloaderSheet>
       ),
       child: Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.7,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         child: Column(
@@ -166,34 +232,66 @@ class _DownloaderSheetState extends ConsumerState<DownloaderSheet>
               decoration: InputDecoration(
                 labelText: l10n.downloaderFileName,
                 prefixIcon: const Icon(Icons.edit, size: 20),
-                suffixText: '.${_selected?.extension ?? ''}',
+                suffixText: '.${_selectedExtension}',
               ),
             ),
             const SizedBox(height: 16),
-            // Tab bar: Video / Audio
-            if (_videoFormats.isNotEmpty && _audioFormats.isNotEmpty)
-              TabBar(
-                controller: _tabController,
-                tabs: [
-                  Tab(text: l10n.downloaderVideoTab),
-                  Tab(text: l10n.downloaderAudioTab),
-                ],
-              ),
+            // Scrollable format list
             Flexible(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _FormatList(
-                    formats: _videoFormats,
-                    selected: _selected,
-                    onSelect: (f) => setState(() => _selected = f),
-                  ),
-                  _FormatList(
-                    formats: _audioFormats,
-                    selected: _selected,
-                    onSelect: (f) => setState(() => _selected = f),
-                  ),
-                ],
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // === Audio section ===
+                    if (res.audioFormats.isNotEmpty) ...[
+                      _SectionHeader(
+                        icon: Icons.music_note,
+                        title: l10n.downloaderAudioSection,
+                        ext: ext,
+                      ),
+                      ...res.audioFormats.map((a) => _AudioTile(
+                            audio: a,
+                            isSelected: _selectedAudio?.formatId == a.formatId,
+                            onSelect: () {
+                              setState(() {
+                                _selectedAudio = a;
+                                _selectedVideo = null;
+                              });
+                            },
+                          )),
+                      const SizedBox(height: 12),
+                    ],
+                    // === Video section ===
+                    if (res.formats.isNotEmpty) ...[
+                      _SectionHeader(
+                        icon: Icons.videocam,
+                        title: l10n.downloaderVideoSection,
+                        ext: ext,
+                      ),
+                      ...res.formats.map((v) => _VideoTile(
+                            video: v,
+                            isSelected: _selectedVideo?.formatId == v.formatId &&
+                                _selectedAudio == null,
+                            onSelect: () {
+                              setState(() {
+                                _selectedVideo = v;
+                                _selectedAudio = null;
+                              });
+                            },
+                          )),
+                    ],
+                    // === No formats at all ===
+                    if (res.formats.isEmpty && res.audioFormats.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          l10n.downloaderNoFormats,
+                          style: TextStyle(color: ext.muted),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -207,7 +305,7 @@ class _DownloaderSheetState extends ConsumerState<DownloaderSheet>
                 const SizedBox(width: 8),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: _startDownload,
+                    onPressed: _canDownload ? _startDownload : null,
                     icon: const Icon(Icons.download_rounded),
                     label: Text(l10n.downloaderDownload),
                   ),
@@ -221,82 +319,151 @@ class _DownloaderSheetState extends ConsumerState<DownloaderSheet>
   }
 }
 
-class _FormatList extends StatelessWidget {
-  const _FormatList({
-    required this.formats,
-    required this.selected,
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+    required this.ext,
+  });
+
+  final IconData icon;
+  final String title;
+  final VidSnapColorsExtension ext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: ext.accent),
+          const SizedBox(width: 6),
+          Text(
+            title,
+            style: TextStyle(
+              color: ext.muted,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AudioTile extends StatelessWidget {
+  const _AudioTile({
+    required this.audio,
+    required this.isSelected,
     required this.onSelect,
   });
 
-  final List<FormatOption> formats;
-  final FormatOption? selected;
-  final ValueChanged<FormatOption> onSelect;
+  final AudioFormat audio;
+  final bool isSelected;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = VidSnapColorsExtension.of(context);
+    return RadioListTile<String>(
+      value: audio.formatId,
+      groupValue: isSelected ? audio.formatId : null,
+      onChanged: (_) => onSelect(),
+      activeColor: ext.accent,
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      title: Text(
+        audio.label,
+        style: TextStyle(
+          color: ext.text,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        '${FormatUtils.bytes(audio.fileSizeBytes)} · ${audio.extension.toUpperCase()}',
+        style: TextStyle(color: ext.muted, fontSize: 12),
+      ),
+    );
+  }
+}
+
+class _VideoTile extends StatelessWidget {
+  const _VideoTile({
+    required this.video,
+    required this.isSelected,
+    required this.onSelect,
+  });
+
+  final FormatOption video;
+  final bool isSelected;
+  final VoidCallback onSelect;
 
   @override
   Widget build(BuildContext context) {
     final ext = VidSnapColorsExtension.of(context);
     final l10n = AppLocalizations.of(context)!;
-    if (formats.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            l10n.downloaderNoFormats,
-            style: TextStyle(color: ext.muted),
-          ),
-        ),
-      );
-    }
-    return ListView.builder(
-      shrinkWrap: true,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: formats.length,
-      itemBuilder: (ctx, i) {
-        final f = formats[i];
-        final isSelected = selected?.formatId == f.formatId;
-        return RadioListTile<String>(
-          value: f.formatId,
-          groupValue: selected?.formatId,
-          onChanged: (_) => onSelect(f),
-          activeColor: ext.accent,
-          dense: true,
-          title: Row(
-            children: [
-              if (f.recommended)
-                Container(
-                  margin: const EdgeInsetsDirectional.only(end: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: ext.accent.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    l10n.downloaderRecommended,
-                    style: TextStyle(
-                      color: ext.accent,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              Flexible(
-                child: Text(
-                  f.label,
-                  style: TextStyle(
-                    color: ext.text,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+    return RadioListTile<String>(
+      value: video.formatId,
+      groupValue: isSelected ? video.formatId : null,
+      onChanged: (_) => onSelect(),
+      activeColor: ext.accent,
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      title: Row(
+        children: [
+          if (video.recommended)
+            Container(
+              margin: const EdgeInsetsDirectional.only(end: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: ext.accent.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                l10n.downloaderRecommended,
+                style: TextStyle(
+                  color: ext.accent,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
+            ),
+          Flexible(
+            child: Text(
+              video.label,
+              style: TextStyle(
+                color: ext.text,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
-          subtitle: Text(
-            '${FormatUtils.bytes(f.fileSizeBytes)} · ${f.extension.toUpperCase()}',
-            style: TextStyle(color: ext.muted, fontSize: 12),
-          ),
-        );
-      },
+          if (video.requiresMerge) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: ext.warning.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                l10n.downloaderMergeRequired,
+                style: TextStyle(
+                  color: ext.warning,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+      subtitle: Text(
+        '${FormatUtils.bytes(video.fileSizeBytes)} · ${video.extension.toUpperCase()}',
+        style: TextStyle(color: ext.muted, fontSize: 12),
+      ),
     );
   }
 }

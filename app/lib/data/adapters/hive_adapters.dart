@@ -4,6 +4,10 @@ import 'package:vidsnap/data/models/download_task.dart';
 import 'package:vidsnap/data/models/history_item.dart';
 
 /// Manually-registered Hive type adapters (no build_runner required).
+///
+/// NOTE: Versioning — if the model changes, bump the field count and append
+/// new fields at the end. Old boxes will return null for missing fields,
+/// which the model's defaults handle gracefully.
 class DownloadTaskAdapter extends TypeAdapter<DownloadTask> {
   @override
   final int typeId = 1;
@@ -31,15 +35,23 @@ class DownloadTaskAdapter extends TypeAdapter<DownloadTask> {
       createdAt: fields[13] as DateTime,
       retryCount: fields[14] as int,
       downloadUrl: fields[15] as String?,
-      thumbnailUrl: fields[16] as String?,
-      errorMessage: fields[17] as String?,
+      videoUrl: fields[16] as String?,
+      audioUrl: fields[17] as String?,
+      requiresMerge: (fields[18] as bool?) ?? false,
+      thumbnailUrl: fields[19] as String?,
+      errorMessage: fields[20] as String?,
+      mergePhase: (fields[21] as bool?) ?? false,
+      videoDownloadedBytes: (fields[22] as int?) ?? 0,
+      audioDownloadedBytes: (fields[23] as int?) ?? 0,
+      videoTotalBytes: fields[24] as int?,
+      audioTotalBytes: fields[25] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, DownloadTask obj) {
     writer
-      ..writeByte(18)
+      ..writeByte(26)
       ..writeByte(0)..write(obj.id)
       ..writeByte(1)..write(obj.sourceId)
       ..writeByte(2)..write(obj.originalUrl)
@@ -56,8 +68,16 @@ class DownloadTaskAdapter extends TypeAdapter<DownloadTask> {
       ..writeByte(13)..write(obj.createdAt)
       ..writeByte(14)..write(obj.retryCount)
       ..writeByte(15)..write(obj.downloadUrl)
-      ..writeByte(16)..write(obj.thumbnailUrl)
-      ..writeByte(17)..write(obj.errorMessage);
+      ..writeByte(16)..write(obj.videoUrl)
+      ..writeByte(17)..write(obj.audioUrl)
+      ..writeByte(18)..write(obj.requiresMerge)
+      ..writeByte(19)..write(obj.thumbnailUrl)
+      ..writeByte(20)..write(obj.errorMessage)
+      ..writeByte(21)..write(obj.mergePhase)
+      ..writeByte(22)..write(obj.videoDownloadedBytes)
+      ..writeByte(23)..write(obj.audioDownloadedBytes)
+      ..writeByte(24)..write(obj.videoTotalBytes)
+      ..writeByte(25)..write(obj.audioTotalBytes);
   }
 }
 

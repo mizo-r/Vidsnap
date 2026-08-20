@@ -37,6 +37,9 @@
   "downloaderAudioTab": "صوت",
   "downloaderSaveFolder": "الحفظ في",
   "downloaderEstimatedSize": "الحجم التقريبي",
+  "downloaderAudioSection": "صوت فقط",
+  "downloaderVideoSection": "فيديو",
+  "downloaderMergeRequired": "دمج",
 
   "downloadsActive": "نشطة",
   "downloadsCompleted": "مكتملة",
@@ -49,6 +52,7 @@
   "downloadsDelete": "حذف",
   "downloadsOpen": "فتح",
   "downloadsShare": "مشاركة",
+  "downloadsMerging": "جارٍ دمج الفيديو والصوت…",
   "downloadsClearCompleted": "مسح المكتملة",
 
   "historyTitle": "السجل",
@@ -84,6 +88,16 @@
   "settingsVersion": "الإصدار",
   "settingsClearData": "مسح كل بيانات التطبيق",
   "settingsClearDataConfirm": "مسح كل البيانات المحلية؟ لن تُحذف التنزيلات.",
+  "settingsStorage": "التخزين",
+  "settingsClearCache": "مسح التخزين المؤقت",
+  "settingsClearCacheConfirm": "حذف كل ملفات الدمج المؤقتة والتنزيلات الجزئية؟",
+  "settingsCacheSize": "حجم التخزين المؤقت الحالي",
+  "settingsCacheCleared": "تم مسح التخزين المؤقت — تم تحرير {size}",
+  "@settingsCacheCleared": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
 
   "whatsappTitle": "حالات الواتساب",
   "whatsappTabImages": "صور",

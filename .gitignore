@@ -14,6 +14,7 @@ npm-debug.log*
 yarn-error.log*
 server/dist/
 server/.env
+server/package-lock.json
 
 # Flutter / Dart
 app/.dart_tool/

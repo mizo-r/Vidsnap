@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:vidsnap/l10n/gen/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vidsnap/core/constants/colors.dart';
@@ -7,6 +6,7 @@ import 'package:vidsnap/core/services/clipboard_monitor_service.dart';
 import 'package:vidsnap/core/services/notification_service.dart';
 import 'package:vidsnap/data/models/app_settings.dart';
 import 'package:vidsnap/data/repositories/settings_repository.dart';
+import 'package:vidsnap/l10n/gen/app_localizations.dart';
 import 'package:vidsnap/router.dart';
 
 /// Riverpod provider that exposes the current settings as a stream so the
@@ -42,8 +42,6 @@ class _VidSnapAppState extends ConsumerState<VidSnapApp> {
     _clipboard.detectedUrls.listen((url) {
       ref.read(notificationServiceProvider).showClipboardDetected(url: url);
     });
-    // Defer starting the clipboard monitor until after the first frame
-    // so we have access to the latest settings.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final settings = ref.read(currentSettingsProvider);
       if (settings.clipboardMonitoringEnabled) {
@@ -78,7 +76,7 @@ class _VidSnapAppState extends ConsumerState<VidSnapApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      routerConfig: buildRouter(),
+      routerConfig: buildRouter(showSplash: true),
       builder: (context, child) {
         // Update clipboard monitor when settings change.
         final s = ref.watch(currentSettingsProvider);
@@ -87,7 +85,10 @@ class _VidSnapAppState extends ConsumerState<VidSnapApp> {
         } else {
           _clipboard.stop();
         }
-        return child!;
+        return Directionality(
+          textDirection: s.language == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+          child: child ?? const SizedBox.shrink(),
+        );
       },
     );
   }

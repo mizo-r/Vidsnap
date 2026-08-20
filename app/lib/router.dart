@@ -4,14 +4,23 @@ import 'package:vidsnap/features/downloads/downloads_screen.dart';
 import 'package:vidsnap/features/history/history_screen.dart';
 import 'package:vidsnap/features/home/home_screen.dart';
 import 'package:vidsnap/features/settings/settings_screen.dart';
+import 'package:vidsnap/features/splash/splash_screen.dart';
 import 'package:vidsnap/features/whatsapp/whatsapp_status_screen.dart';
 import 'package:vidsnap/l10n/gen/app_localizations.dart';
 
 /// Builds the GoRouter with bottom-nav shell.
-GoRouter buildRouter() {
+/// When [showSplash] is true, the initial route is the splash screen.
+GoRouter buildRouter({bool showSplash = false}) {
   return GoRouter(
-    initialLocation: '/home',
+    initialLocation: showSplash ? '/splash' : '/home',
     routes: [
+      GoRoute(
+        path: '/splash',
+        name: 'splash',
+        builder: (context, state) => SplashScreen(
+          onComplete: () => context.go('/home'),
+        ),
+      ),
       ShellRoute(
         builder: (context, state, child) => _ScaffoldWithNav(child: child),
         routes: [

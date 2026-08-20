@@ -162,26 +162,51 @@ class _TaskCard extends ConsumerWidget {
           ),
           if (task.isActive) ...[
             const SizedBox(height: 8),
-            LinearProgressIndicator(
-              value: task.progressPercent / 100,
-              minHeight: 6,
-              backgroundColor: ext.muted.withOpacity(0.2),
-              color: ext.accent,
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${task.progressPercent}%',
-                  style: TextStyle(color: ext.muted, fontSize: 12),
-                ),
-                Text(
-                  '${FormatUtils.bytes(task.downloadedBytes)} / ${FormatUtils.bytes(task.totalBytes)}',
-                  style: TextStyle(color: ext.muted, fontSize: 12),
-                ),
-              ],
-            ),
+            if (task.mergePhase) ...[
+              // Merge phase — show spinner + label
+              Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: ext.accent,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.downloadsMerging,
+                    style: TextStyle(
+                      color: ext.accent,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              LinearProgressIndicator(
+                value: task.progressPercent / 100,
+                minHeight: 6,
+                backgroundColor: ext.muted.withOpacity(0.2),
+                color: ext.accent,
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${task.progressPercent}%',
+                    style: TextStyle(color: ext.muted, fontSize: 12),
+                  ),
+                  Text(
+                    '${FormatUtils.bytes(task.downloadedBytes)} / ${FormatUtils.bytes(task.totalBytes)}',
+                    style: TextStyle(color: ext.muted, fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
           ] else if (task.isFailed && task.errorMessage != null) ...[
             const SizedBox(height: 4),
             Text(

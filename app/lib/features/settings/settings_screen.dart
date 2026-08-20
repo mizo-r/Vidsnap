@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vidsnap/app.dart';
 import 'package:vidsnap/core/constants/colors.dart';
+import 'package:vidsnap/core/services/download_service.dart';
 import 'package:vidsnap/core/services/extraction_service.dart';
+import 'package:vidsnap/core/utils/format_utils.dart';
 import 'package:vidsnap/data/repositories/download_repository.dart';
 import 'package:vidsnap/data/repositories/history_repository.dart';
 import 'package:vidsnap/data/repositories/settings_repository.dart';
@@ -225,6 +227,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
               ],
             ),
+          ),
+          _SectionHeader(l10n.settingsStorage, ext),
+          FutureBuilder<int>(
+            future: ref.watch(downloadServiceProvider).tempFilesSize(),
+            builder: (context, snapshot) {
+              final size = snapshot.data ?? 0;
+              return ListTile(
+                leading: const Icon(Icons.cleaning_services_outlined),
+                title: Text(l10n.settingsClearCache),
+                subtitle: Text(
+                  '${l10n.settingsCacheSize}: ${FormatUtils.bytes(size)}',
+                ),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: Text(l10n.settingsClearCache),
+                      content: Text(l10n.settingsClearCacheConfirm),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: Text(l10n.commonCancel),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: Text(l10n.commonConfirm),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed != true) return;
+                  final freed = await ref
+                      .read(downloadServiceProvider)
+                      .clearAllTempFiles();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          l10n.settingsCacheCleared(FormatUtils.bytes(freed)),
+                        ),
+                        backgroundColor: VidSnapColors.success,
+                      ),
+                    );
+                    setState(() {}); // refresh size
+                  }
+                },
+              );
+            },
           ),
           _SectionHeader(l10n.settingsAbout, ext),
           ListTile(
