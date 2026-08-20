@@ -28,7 +28,7 @@ android {
 
     defaultConfig {
         applicationId = "app.vidsnap.mobile"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 34
         versionCode = flutter.versionCode().toInt()
         versionName = flutter.versionName()
