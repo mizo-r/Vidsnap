@@ -69,6 +69,7 @@
   "settingsThemeLight": "Light",
   "settingsThemeSystem": "System",
   "settingsSaveFolder": "Default save folder",
+  "settingsSaveFolderReset": "Reset to default path",
   "settingsDownloads": "Downloads",
   "settingsMaxConcurrent": "Max concurrent downloads",
   "settingsClipboardMonitoring": "Clipboard monitoring",

@@ -111,7 +111,7 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
     return AppSettings(
       language: fields[0] as String? ?? 'en',
       themeMode: fields[1] as String? ?? 'dark',
-      defaultSaveFolder: fields[2] as String? ?? 'VidSnap',
+      defaultSaveFolder: fields[2] as String? ?? 'Vidsnap/download',
       clipboardMonitoringEnabled: fields[3] as bool? ?? true,
       maxConcurrentDownloads: fields[4] as int? ?? 2,
       notificationsEnabled: fields[5] as bool? ?? true,

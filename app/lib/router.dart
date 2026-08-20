@@ -5,6 +5,7 @@ import 'package:vidsnap/features/history/history_screen.dart';
 import 'package:vidsnap/features/home/home_screen.dart';
 import 'package:vidsnap/features/settings/settings_screen.dart';
 import 'package:vidsnap/features/whatsapp/whatsapp_status_screen.dart';
+import 'package:vidsnap/l10n/gen/app_localizations.dart';
 
 /// Builds the GoRouter with bottom-nav shell.
 GoRouter buildRouter() {
@@ -53,6 +54,7 @@ class _ScaffoldWithNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
     final index = _indexForLocation(location);
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: child,
       bottomNavigationBar: NavigationBar(
@@ -62,27 +64,27 @@ class _ScaffoldWithNav extends StatelessWidget {
           NavigationDestination(
             icon: const Icon(Icons.home_outlined),
             selectedIcon: const Icon(Icons.home),
-            label: 'Home',
+            label: l10n.navHome,
           ),
           NavigationDestination(
             icon: const Icon(Icons.chat_bubble_outline),
             selectedIcon: const Icon(Icons.chat_bubble),
-            label: 'Statuses',
+            label: l10n.navWhatsApp,
           ),
           NavigationDestination(
             icon: const Icon(Icons.download_outlined),
             selectedIcon: const Icon(Icons.download),
-            label: 'Downloads',
+            label: l10n.navDownloads,
           ),
           NavigationDestination(
             icon: const Icon(Icons.history_outlined),
             selectedIcon: const Icon(Icons.history),
-            label: 'History',
+            label: l10n.navHistory,
           ),
           NavigationDestination(
             icon: const Icon(Icons.settings_outlined),
             selectedIcon: const Icon(Icons.settings),
-            label: 'Settings',
+            label: l10n.navSettings,
           ),
         ],
       ),

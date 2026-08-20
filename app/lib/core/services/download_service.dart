@@ -292,15 +292,19 @@ class DownloadService {
   Future<Directory> _resolveSaveDir() async {
     final folder = settingsRepo.current.defaultSaveFolder;
     if (Platform.isAndroid) {
-      final external = await getExternalStorageDirectory();
-      if (external != null) {
-        // On Android 11+ with Scoped Storage, apps can only write to their own
-        // package-specific external dir. Files saved here appear under
-        // /Android/data/<package>/files/<folder> — visible to file managers.
-        final dir = Directory(p.join(external.path, folder));
-        if (!dir.existsSync()) dir.createSync(recursive: true);
-        return dir;
-      }
+      // Public external storage root — works because the app holds
+      // MANAGE_EXTERNAL_STORAGE permission (already declared for WhatsApp
+      // status access). This puts files where the user can see them in
+      // their file manager (Internal Storage / Vidsnap / download).
+      //
+      // If the user picked an absolute path via the directory picker, use it
+      // as-is. Otherwise, treat the value as a relative path under
+      // /storage/emulated/0/.
+      final isAbsolute = folder.startsWith('/');
+      final dirPath = isAbsolute ? folder : '/storage/emulated/0/$folder';
+      final dir = Directory(dirPath);
+      if (!dir.existsSync()) dir.createSync(recursive: true);
+      return dir;
     }
     final appDir = await getApplicationDocumentsDirectory();
     final dir = Directory(p.join(appDir.path, folder));

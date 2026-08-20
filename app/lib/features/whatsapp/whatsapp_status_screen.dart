@@ -108,20 +108,30 @@ class _WhatsAppStatusScreenState extends ConsumerState<WhatsAppStatusScreen>
     final ext = VidSnapColorsExtension.of(context);
     final async = ref.watch(whatsappStatusesProvider);
 
+    // Title reflects the current mode (WhatsApp vs WhatsApp Business).
+    final titleText = _business
+        ? (l10n.localeName == 'ar'
+            ? 'حالات واتساب الأعمال'
+            : 'WhatsApp Business Statuses')
+        : l10n.whatsappTitle;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.whatsappTitle),
+        title: Text(titleText),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: l10n.whatsappRefresh,
             onPressed: _reload,
           ),
-          Switch(
-            value: _business,
-            onChanged: _toggleBusiness,
+          // WhatsApp / Business toggle — green pill button with "B" indicator.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: _BusinessToggle(
+              isBusiness: _business,
+              onChanged: _toggleBusiness,
+            ),
           ),
-          const SizedBox(width: 8),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -350,6 +360,75 @@ class _Thumbnail extends StatelessWidget {
       errorBuilder: (_, __, ___) => Container(
         color: Colors.black26,
         child: const Icon(Icons.broken_image, color: Colors.white54, size: 32),
+      ),
+    );
+  }
+}
+
+/// Pill-style toggle that switches between WhatsApp (personal) and
+/// WhatsApp Business. When Business is active, the button turns WhatsApp
+/// green (#25D366) and shows a "B" badge — mirroring Snaptube's UX.
+class _BusinessToggle extends StatelessWidget {
+  const _BusinessToggle({required this.isBusiness, required this.onChanged});
+
+  final bool isBusiness;
+  final ValueChanged<bool> onChanged;
+
+  static const Color _whatsappGreen = Color(0xFF25D366);
+  static const Color _businessGreen = Color(0xFF1FB855);
+
+  @override
+  Widget build(BuildContext context) {
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    return Tooltip(
+      message: isBusiness ? 'WhatsApp Business' : 'WhatsApp',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => onChanged(!isBusiness),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            width: 72,
+            height: 36,
+            decoration: BoxDecoration(
+              color: isBusiness ? _businessGreen : _whatsappGreen,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Sliding knob
+                AnimatedAlign(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  alignment: isBusiness
+                      ? (isRtl ? Alignment.centerLeft : Alignment.centerRight)
+                      : (isRtl ? Alignment.centerRight : Alignment.centerLeft),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        isBusiness ? 'B' : 'W',
+                        style: TextStyle(
+                          color: isBusiness ? _businessGreen : _whatsappGreen,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

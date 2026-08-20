@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vidsnap/app.dart';
@@ -87,35 +88,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             leading: const Icon(Icons.folder_outlined),
             title: Text(l10n.settingsSaveFolder),
             subtitle: Text(settings.defaultSaveFolder),
+            trailing: const Icon(Icons.chevron_right, size: 20),
             onTap: () async {
-              final controller = TextEditingController(text: settings.defaultSaveFolder);
-              final result = await showDialog<String>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text(l10n.settingsSaveFolder),
-                  content: TextField(
-                    controller: controller,
-                    autofocus: true,
-                    decoration: const InputDecoration(hintText: 'VidSnap'),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text(l10n.commonCancel),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-                      child: Text(l10n.commonSave),
-                    ),
-                  ],
-                ),
-              );
-              if (result != null && result.isNotEmpty) {
-                await ref
-                    .read(settingsRepositoryProvider)
-                    .update((s) => s.copyWith(defaultSaveFolder: result));
-              }
+              // Open the system directory picker so the user can choose
+              // any path on the device (internal storage, SD card, etc.).
+              final picked = await FilePicker.platform.getDirectoryPath();
+              if (picked == null) return;
+              await ref
+                  .read(settingsRepositoryProvider)
+                  .update((s) => s.copyWith(defaultSaveFolder: picked));
             },
+          ),
+          // Quick reset to the default public path
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                onPressed: () async {
+                  await ref.read(settingsRepositoryProvider).update(
+                        (s) => s.copyWith(defaultSaveFolder: 'Vidsnap/download'),
+                      );
+                },
+                icon: const Icon(Icons.refresh, size: 16),
+                label: Text(l10n.settingsSaveFolderReset),
+              ),
+            ),
           ),
           _SectionHeader(l10n.settingsDownloads, ext),
           ListTile(

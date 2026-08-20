@@ -24,7 +24,9 @@ class AppConstants {
   static const int defaultMaxConcurrentDownloads = 2;
   static const bool defaultClipboardMonitoring = true;
   static const bool defaultNotificationsEnabled = true;
-  static const String defaultSaveFolder = 'VidSnap';
+  /// Default save folder (relative to external storage root on Android).
+  /// Saves to: /storage/emulated/0/Vidsnap/download
+  static const String defaultSaveFolder = 'Vidsnap/download';
 
   /// WhatsApp status directories (multiple fallbacks for different Android versions)
   static const List<String> whatsappStatusDirs = [

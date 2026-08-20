@@ -66,6 +66,7 @@
   "settingsThemeLight": "فاتح",
   "settingsThemeSystem": "النظام",
   "settingsSaveFolder": "مجلد الحفظ الافتراضي",
+  "settingsSaveFolderReset": "استعادة المسار الافتراضي",
   "settingsDownloads": "التنزيلات",
   "settingsMaxConcurrent": "الحد الأقصى للتنزيلات المتزامنة",
   "settingsClipboardMonitoring": "مراقبة الحافظة",

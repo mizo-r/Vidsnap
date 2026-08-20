@@ -3,7 +3,7 @@ class AppSettings {
   AppSettings({
     this.language = 'en',
     this.themeMode = 'dark',
-    this.defaultSaveFolder = 'VidSnap',
+    this.defaultSaveFolder = 'Vidsnap/download',
     this.clipboardMonitoringEnabled = true,
     this.maxConcurrentDownloads = 2,
     this.notificationsEnabled = true,
