@@ -10,7 +10,7 @@ plugins {
 
 android {
     namespace = "app.vidsnap.mobile"
-    compileSdk = 34
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -18,8 +18,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    // New Kotlin compilerOptions DSL (replaces deprecated kotlinOptions { jvmTarget })
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     sourceSets {
@@ -29,9 +32,11 @@ android {
     defaultConfig {
         applicationId = "app.vidsnap.mobile"
         minSdk = 24
-        targetSdk = 34
-        versionCode = flutter.versionCode().toInt()
-        versionName = flutter.versionName()
+        targetSdk = 35
+        // flutter.versionCode and flutter.versionName are properties
+        // (not functions) in modern Flutter Gradle Plugin.
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
     }
 
     signingConfigs {
