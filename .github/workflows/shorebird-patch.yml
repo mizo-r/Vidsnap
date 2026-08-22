@@ -1,0 +1,96 @@
+name: Shorebird Patch
+
+# =============================================================================
+# Push a small Dart code/UI patch to installed VidSnap apps.
+#
+# Use this workflow for tiny changes that don't require a new APK:
+#   - Text changes (button labels, dialog messages)
+#   - Color tweaks
+#   - Layout adjustments
+#   - Bug fixes in Dart logic
+#   - New translation strings
+#
+# What CANNOT be pushed via patch (requires a full Shorebird Release instead):
+#   - Native code changes (AndroidManifest.xml, build.gradle, Kotlin/Java)
+#   - Asset changes (icons, images, fonts)
+#   - Adding/removing Flutter plugins
+#   - Changes to pubspec.yaml dependencies
+#
+# How to use:
+#   1. Make your Dart/UI changes locally and commit them.
+#   2. Push to main, OR trigger this workflow manually from the Actions tab.
+#   3. The workflow builds a patch against the LATEST shorebird release
+#      and uploads it to Shorebird's CDN.
+#   4. Installed apps will auto-download the patch on their next launch
+#      (usually within a few seconds of opening the app).
+#
+# Required GitHub Secrets:
+#   - SHOREBIRD_TOKEN     API key from https://console.shorebird.dev
+#
+# Trigger options:
+#   - workflow_dispatch   Manual run (recommended — gives you control)
+#   - workflow_dispatch with `release_version` input to target a specific
+#     release instead of the latest one.
+# =============================================================================
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Target Shorebird release version (e.g. "1.1.0+2"). Leave empty to patch the latest.'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  shorebird-patch:
+    name: Build & Push Shorebird Patch
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Shorebird bundles its own Flutter fork.
+      - name: Set up Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+
+      - name: Verify Shorebird installation
+        run: shorebird --version
+
+      - name: Download Flutter dependencies
+        run: shorebird flutter pub get
+
+      - name: Generate localization files
+        run: shorebird flutter gen-l10n
+
+      # Build the patch. `--target-version` is optional; if not provided,
+      # shorebird patches the most recent release for each platform.
+      - name: Build & publish Shorebird patch
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        run: |
+          ARGS="patch android --force"
+          if [ -n "${{ inputs.release_version }}" ]; then
+            ARGS="$ARGS --target-version=${{ inputs.release_version }}"
+          fi
+          echo "Running: shorebird $ARGS"
+          shorebird $ARGS
+
+      # Print the list of patches so we can verify the new one landed.
+      - name: List recent patches
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        run: shorebird patches list
