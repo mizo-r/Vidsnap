@@ -61,13 +61,37 @@ You can also trigger the workflow manually from the Actions tab → "Build APK" 
 ## Configuration
 
 - **Server URL**: Set in the app under Settings → Server URL. Default is `https://vidsnap-server.example.com` (placeholder). Change it to point to your deployment.
-- **Signing**: For a stable release key, set these GitHub Secrets:
-  - `KEYSTORE_BASE64` — base64-encoded `.jks` file
-  - `KEYSTORE_PASSWORD`
-  - `KEY_ALIAS`
-  - `KEY_PASSWORD`
-  
-  If the secrets are missing, the workflow auto-generates a self-signed keystore for that run.
+- **Language**: Defaults to "System default" (follows the device locale). Users can override in Settings → Language to force Arabic or English.
+- **Signing** (required for releases): Set these four GitHub Secrets. Without them, the workflow will **fail loudly** (it no longer auto-generates a throwaway keystore, because that breaks app updates on user devices).
+
+  | Secret name | What to put | How to get it |
+  |-------------|-------------|---------------|
+  | `KEYSTORE_BASE64` | Your `.jks` keystore file, base64-encoded | `base64 -w0 vidsnap.jks` on Linux/macOS, or `certutil -encode vidsnap.jks vidsnap.b64` then copy contents on Windows |
+  | `KEYSTORE_PASSWORD` | The keystore's store password | Whatever you set when generating the keystore |
+  | `KEY_ALIAS` | The alias of the signing key inside the keystore | Whatever you passed to `keytool -genkey ... -alias <name>` |
+  | `KEY_PASSWORD` | The password for that specific key | Whatever you set as `-keypass` |
+
+  **How to generate a keystore locally (do this ONCE, keep the file safe):**
+
+  ```bash
+  keytool -genkey -v \
+    -keystore vidsnap.jks \
+    -keyalg RSA -keysize 2048 -validity 10000 \
+    -alias vidsnap \
+    -dname "CN=VidSnap, OU=Mobile, O=VidSnap, L=Default, S=Default, C=US" \
+    -storepass <YOUR_STORE_PASSWORD> \
+    -keypass <YOUR_KEY_PASSWORD>
+  ```
+
+  Then encode and add to GitHub Secrets (repo → Settings → Secrets and variables → Actions → New repository secret):
+
+  ```bash
+  base64 -w0 vidsnap.jks   # copy entire output as KEYSTORE_BASE64
+  ```
+
+  ⚠️ **Keep `vidsnap.jks` in a safe offline location.** If you lose it, you cannot update the app for users who already installed it — Android will reject the new APK as a different app.
+
+  **Add the secrets at:** https://github.com/mizo-r/Vidsnap/settings/secrets/actions
 
 ## License
 

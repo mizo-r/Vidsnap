@@ -60,7 +60,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: Text(l10n.settingsLanguage),
             trailing: DropdownButton<String>(
               value: settings.language,
-              items: const [
+              items: [
+                DropdownMenuItem(value: 'system', child: Text(l10n.settingsLanguageSystem)),
                 DropdownMenuItem(value: 'en', child: Text('English')),
                 DropdownMenuItem(value: 'ar', child: Text('العربية')),
               ],

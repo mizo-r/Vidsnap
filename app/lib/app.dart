@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vidsnap/core/constants/colors.dart';
 import 'package:vidsnap/core/services/clipboard_monitor_service.dart';
 import 'package:vidsnap/core/services/notification_service.dart';
+import 'package:vidsnap/core/utils/language_resolver.dart';
 import 'package:vidsnap/data/models/app_settings.dart';
 import 'package:vidsnap/data/repositories/settings_repository.dart';
 import 'package:vidsnap/l10n/gen/app_localizations.dart';
@@ -60,7 +61,10 @@ class _VidSnapAppState extends ConsumerState<VidSnapApp> {
   Widget build(BuildContext context) {
     final settings = ref.watch(currentSettingsProvider);
     final themeMode = _parseThemeMode(settings.themeMode);
-    final locale = Locale(settings.language);
+    // Resolve the effective language. 'system' follows the device locale;
+    // 'ar'/'en' are honored as explicit user choices.
+    final effectiveLanguage = resolveEffectiveLanguage(settings.language);
+    final locale = Locale(effectiveLanguage);
 
     return MaterialApp.router(
       title: 'VidSnap',
@@ -85,8 +89,11 @@ class _VidSnapAppState extends ConsumerState<VidSnapApp> {
         } else {
           _clipboard.stop();
         }
+        // Resolve language again inside the builder so directionality stays
+        // in sync if the user switches language at runtime.
+        final lang = resolveEffectiveLanguage(s.language);
         return Directionality(
-          textDirection: s.language == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+          textDirection: lang == 'ar' ? TextDirection.rtl : TextDirection.ltr,
           child: child ?? const SizedBox.shrink(),
         );
       },

@@ -128,8 +128,13 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+    // Backward compatibility: pre-1.1.0 versions saved 'ar' or 'en'
+    // directly. New versions save 'system' as the default.
+    // Existing users keep their explicit choice — that's the desired behavior
+    // (if they previously picked a language, we honor it).
+    final savedLanguage = fields[0] as String? ?? 'system';
     return AppSettings(
-      language: fields[0] as String? ?? 'en',
+      language: savedLanguage,
       themeMode: fields[1] as String? ?? 'dark',
       defaultSaveFolder: fields[2] as String? ?? 'Vidsnap/download',
       clipboardMonitoringEnabled: fields[3] as bool? ?? true,

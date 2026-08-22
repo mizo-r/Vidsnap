@@ -1,7 +1,12 @@
 /// User-configurable settings — single record stored in Hive.
+///
+/// [language] accepts three values:
+///   - 'system' : follow the device locale (default on first launch)
+///   - 'ar'     : force Arabic
+///   - 'en'     : force English
 class AppSettings {
   AppSettings({
-    this.language = 'en',
+    this.language = 'system',
     this.themeMode = 'dark',
     this.defaultSaveFolder = 'Vidsnap/download',
     this.clipboardMonitoringEnabled = true,

@@ -76,32 +76,59 @@ jobs:
           KEY_ALIAS_SECR: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD_SECR: ${{ secrets.KEY_PASSWORD }}
         run: |
-          # Create key.properties for the Gradle build.
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "Using user-provided keystore from GitHub Secrets."
-            echo "$KEYSTORE_BASE64" | base64 -d > android/app/vidsnap.jks
-            cat > android/key.properties <<EOF
-          storeFile=vidsnap.jks
-          storePassword=$KEYSTORE_PASSWORD_SECR
-          keyAlias=$KEY_ALIAS_SECR
-          keyPassword=$KEY_PASSWORD_SECR
-          EOF
-          else
-            echo "No keystore secret found — generating a fresh self-signed keystore for this run."
-            keytool -genkey -v \
-              -keystore android/app/vidsnap.jks \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -alias vidsnap \
-              -dname "CN=VidSnap, OU=Mobile, O=VidSnap, L=Default, S=Default, C=US" \
-              -storepass vidsnap -keypass vidsnap
-            cat > android/key.properties <<EOF
-          storeFile=vidsnap.jks
-          storePassword=vidsnap
-          keyAlias=vidsnap
-          keyPassword=vidsnap
-          EOF
+          # We deliberately do NOT auto-generate a keystore when the secrets
+          # are missing. Auto-generated keystores differ between runs and
+          # prevent users from updating the app (Android rejects APKs signed
+          # with a different key than the one already installed).
+          #
+          # If any of the four required secrets are absent, fail loudly with
+          # a clear message explaining what to set up.
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Missing GitHub Secret 'KEYSTORE_BASE64'."
+            echo "::error::This build cannot produce a release-signed APK without a stable keystore."
+            echo "::error::See the repo README (§ Signing) for how to generate one and add the secrets:"
+            echo "::error::  KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD"
+            exit 1
           fi
-          echo "Keystore ready."
+          if [ -z "$KEYSTORE_PASSWORD_SECR" ] || [ -z "$KEY_ALIAS_SECR" ] || [ -z "$KEY_PASSWORD_SECR" ]; then
+            echo "::error::One or more signing secrets are missing."
+            echo "::error::Required: KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD (alongside KEYSTORE_BASE64)."
+            exit 1
+          fi
+
+          echo "Decoding user-provided keystore from GitHub Secrets."
+          # Write to a path under android/app/ that matches what key.properties expects.
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/vidsnap.jks
+
+          # Verify the keystore is readable with the provided password.
+          # This catches typos early instead of letting Gradle fail later.
+          if ! keytool -list -keystore android/app/vidsnap.jks \
+                -storepass "$KEYSTORE_PASSWORD_SECR" \
+                -alias "$KEY_ALIAS_SECR" > /dev/null 2>&1; then
+            echo "::error::Keystore verification failed. Check that KEYSTORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD match the keystore you uploaded."
+            exit 1
+          fi
+
+          # Write key.properties with printf (avoids YAML heredoc indentation issues).
+          # Lines have NO leading whitespace — Gradle's Properties.load() is strict.
+          {
+            printf 'storeFile=vidsnap.jks\n'
+            printf 'storePassword=%s\n' "$KEYSTORE_PASSWORD_SECR"
+            printf 'keyAlias=%s\n' "$KEY_ALIAS_SECR"
+            printf 'keyPassword=%s\n' "$KEY_PASSWORD_SECR"
+          } > android/key.properties
+
+          echo "Keystore ready. Signing release APK with the user-provided key."
+          # Sanity check: confirm the file exists and has 4 entries.
+          test -f android/key.properties || { echo "::error::key.properties was not created"; exit 1; }
+          LINES=$(grep -c '=' android/key.properties || true)
+          if [ "$LINES" -lt 4 ]; then
+            echo "::error::key.properties is malformed (expected 4 entries, found $LINES)"
+            exit 1
+          fi
+          # Print a redacted version for debugging (no secrets leaked).
+          echo "key.properties (redacted):"
+          sed 's/=.*/=<redacted>/' android/key.properties
 
       - name: Build release APK
         run: flutter build apk --release --no-tree-shake-icons

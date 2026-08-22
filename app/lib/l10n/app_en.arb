@@ -68,6 +68,7 @@
   "settingsTitle": "Settings",
   "settingsGeneral": "General",
   "settingsLanguage": "Language",
+  "settingsLanguageSystem": "System default",
   "settingsTheme": "Theme",
   "settingsThemeDark": "Dark",
   "settingsThemeLight": "Light",
