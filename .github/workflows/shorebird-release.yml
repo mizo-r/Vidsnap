@@ -61,10 +61,19 @@ jobs:
         run: |
           shorebird --version
           # The setup-shorebird action adds `shorebird` to PATH but not `flutter`.
-          # shorebird installs its Flutter fork under bin/cache/flutter/<hash>/bin
-          FLUTTER_BIN_DIR=$(ls -d $HOME/.shorebird/bin/cache/flutter/*/bin 2>/dev/null | head -1)
+          # Shorebird's install path is stored in $install_path env var
+          # (set by the setup-shorebird action) — defaults to ~/.config/shorebird
+          # on Linux runners.
+          SHOREBIRD_DIR="${install_path:-$HOME/.shorebird}"
+          if [ ! -d "$SHOREBIRD_DIR" ]; then
+            # Fallback for older setups
+            SHOREBIRD_DIR="$HOME/.shorebird"
+          fi
+          echo "Shorebird install dir: $SHOREBIRD_DIR"
+          FLUTTER_BIN_DIR=$(ls -d "$SHOREBIRD_DIR"/bin/cache/flutter/*/bin 2>/dev/null | head -1)
           if [ -z "$FLUTTER_BIN_DIR" ]; then
-            echo "::error::Could not find Flutter binary under shorebird install"
+            echo "::error::Could not find Flutter binary under $SHOREBIRD_DIR"
+            ls -la "$SHOREBIRD_DIR/bin/cache/" 2>&1 || true
             exit 1
           fi
           echo "Found Flutter at: $FLUTTER_BIN_DIR"
