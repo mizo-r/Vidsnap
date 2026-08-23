@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:vidsnap/app.dart';
 import 'package:vidsnap/core/constants/colors.dart';
 import 'package:vidsnap/core/services/download_service.dart';
@@ -9,6 +10,7 @@ import 'package:vidsnap/core/utils/format_utils.dart';
 import 'package:vidsnap/data/repositories/download_repository.dart';
 import 'package:vidsnap/data/repositories/history_repository.dart';
 import 'package:vidsnap/data/repositories/settings_repository.dart';
+import 'package:vidsnap/features/about/about_screen.dart';
 import 'package:vidsnap/l10n/gen/app_localizations.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -288,10 +290,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             },
           ),
           _SectionHeader(l10n.settingsAbout, ext),
+          // About VidSnap — opens the dedicated About screen.
           ListTile(
             leading: const Icon(Icons.info_outline),
-            title: Text(l10n.settingsVersion),
-            trailing: const Text('1.0.0'),
+            title: Text(l10n.aboutTitle),
+            trailing: const Icon(Icons.chevron_right, size: 20),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AboutScreen()),
+              );
+            },
+          ),
+          // Version — read dynamically from package_info_plus so it always
+          // matches the actual installed version (no more hardcoded '1.0.0').
+          FutureBuilder<PackageInfo>(
+            future: PackageInfo.fromPlatform(),
+            builder: (context, snapshot) {
+              final version = snapshot.data?.version ?? '...';
+              return ListTile(
+                leading: const Icon(Icons.tag),
+                title: Text(l10n.settingsVersion),
+                trailing: Text(
+                  version,
+                  style: TextStyle(color: ext.muted, fontSize: 14),
+                ),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.delete_forever, color: VidSnapColors.error),

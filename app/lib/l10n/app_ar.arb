@@ -100,6 +100,38 @@
     }
   },
 
+  "aboutTitle": "حول VidSnap",
+  "aboutTagline": "تطبيق تنزيل فيديو بسيط وحديث صُمّم لجعل تنزيل الفيديوهات سريعًا وواضحًا ومريحًا.",
+  "aboutDevelopedBy": "تطوير",
+  "aboutDeveloperName": "مطوّر مستقل",
+  "aboutVersion": "الإصدار",
+  "aboutWhatsNew": "ما الجديد",
+  "aboutCheckForUpdates": "التحقق من وجود تحديثات",
+  "aboutCurrentVersion": "الحالي",
+  "aboutCheckButton": "تحقق الآن",
+  "aboutDownloadUpdate": "تحميل التحديث",
+  "aboutChecking": "جارٍ التحقق من التحديثات…",
+  "aboutCheckingDesc": "جارٍ الاتصال بـ GitHub للحصول على أحدث إصدار.",
+  "aboutCheckFailed": "تعذّر التحقق من التحديثات",
+  "aboutNotChecked": "لم يتم التحقق بعد",
+  "aboutNotCheckedDesc": "اضغط الزر أدناه للتحقق من وجود إصدار أحدث.",
+  "aboutUpdateAvailable": "تحديث متاح!",
+  "aboutUpdateAvailableDesc": "الإصدار {version} متاح. اضغط أدناه لتحميله.",
+  "@aboutUpdateAvailableDesc": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "aboutUpToDate": "أنت على أحدث إصدار!",
+  "aboutUpToDateDesc": "أنت تستخدم الإصدار {version}، وهو أحدث إصدار.",
+  "@aboutUpToDateDesc": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "aboutCurrentLabel": "الحالي",
+  "aboutLatestLabel": "الأحدث",
+
   "whatsappTitle": "حالات الواتساب",
   "whatsappTabImages": "صور",
   "whatsappTabVideos": "فيديو",

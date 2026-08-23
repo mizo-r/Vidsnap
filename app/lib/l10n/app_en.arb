@@ -103,6 +103,38 @@
     }
   },
 
+  "aboutTitle": "About VidSnap",
+  "aboutTagline": "A simple and modern video downloader designed to make downloading videos fast, clear, and convenient.",
+  "aboutDevelopedBy": "Developed by",
+  "aboutDeveloperName": "Independent Developer",
+  "aboutVersion": "Version",
+  "aboutWhatsNew": "What's New",
+  "aboutCheckForUpdates": "Check for Updates",
+  "aboutCurrentVersion": "Current",
+  "aboutCheckButton": "Check now",
+  "aboutDownloadUpdate": "Download update",
+  "aboutChecking": "Checking for updates…",
+  "aboutCheckingDesc": "Contacting GitHub for the latest release.",
+  "aboutCheckFailed": "Could not check for updates",
+  "aboutNotChecked": "Not checked yet",
+  "aboutNotCheckedDesc": "Tap the button below to check for a newer version.",
+  "aboutUpdateAvailable": "Update available!",
+  "aboutUpdateAvailableDesc": "Version {version} is available. Tap below to download it.",
+  "@aboutUpdateAvailableDesc": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "aboutUpToDate": "You're up to date!",
+  "aboutUpToDateDesc": "You're running version {version}, the latest release.",
+  "@aboutUpToDateDesc": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "aboutCurrentLabel": "Current",
+  "aboutLatestLabel": "Latest",
+
   "whatsappTitle": "WhatsApp Statuses",
   "whatsappTabImages": "Images",
   "whatsappTabVideos": "Videos",
