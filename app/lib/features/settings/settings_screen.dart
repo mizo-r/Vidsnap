@@ -22,6 +22,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _testingServer = false;
   String? _serverStatus;
   final _urlController = TextEditingController();
+  bool _urlInitialized = false;
 
   @override
   void dispose() {
@@ -47,7 +48,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final ext = VidSnapColorsExtension.of(context);
     final settings = ref.watch(currentSettingsProvider);
-    _urlController.text = settings.serverUrl;
+    // Initialize the URL controller ONCE with the saved value.
+    // Re-assigning .text on every rebuild would overwrite the user's
+    // in-progress edits whenever setState fires (e.g. after pressing
+    // "Test"), causing their URL to revert to the saved value before
+    // they could press "Save".
+    if (!_urlInitialized) {
+      _urlController.text = settings.serverUrl;
+      _urlInitialized = true;
+    }
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
