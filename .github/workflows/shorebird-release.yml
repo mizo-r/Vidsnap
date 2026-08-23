@@ -116,14 +116,16 @@ jobs:
       #   - Builds a release APK with the stable keystore
       #   - Uploads the Dart code + AOT artifacts to Shorebird's CDN
       #   - Returns a release version number (e.g. "1.1.0+2 / 1")
-      # The --force flag skips the interactive "are you sure?" prompt in CI.
+      # --artifact apk  : produce an APK (default is AAB which can't be
+      #                    sideloaded by users)
+      # --platforms android : only build for Android (skip iOS)
       - name: Build & publish Shorebird release
         env:
           # SHOREBIRD_TOKEN authenticates shorebird against your account.
           # The CLI reads this env var automatically — no need to run
           # `shorebird login` separately.
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird release android --force
+        run: shorebird release android --artifact apk --platforms android
 
       - name: List build output
         run: ls -la build/app/outputs/flutter-apk/
