@@ -14,31 +14,78 @@ final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
   return await PackageInfo.fromPlatform();
 });
 
-/// Hardcoded changelog entries per version.
+/// Hardcoded changelog entries per version, per language.
 /// New versions add their entry at the top of the list.
 /// This keeps the changelog accessible offline and avoids an extra
 /// network call just to show release notes.
-const Map<String, List<String>> kChangelog = {
-  '1.1.1': [
-    'Improved stability',
-    'Bug fixes',
-    'Performance improvements',
-  ],
-  '1.1.0': [
-    'Added WhatsApp status saver',
-    'Added dark/light theme support',
-    'Added Arabic and English localization',
-    'Added FFmpeg-based video + audio merge for HD downloads',
-    'Added splash screen',
-    'Added cache management in Settings',
-  ],
-  '1.0.0': [
-    'Initial release',
-    'Video downloader with link paste',
-    'Background downloads with pause/resume',
-    'Smart notifications',
-  ],
+const Map<String, Map<String, List<String>>> kChangelog = {
+  '1.1.2': {
+    'en': [
+      'Improved stability',
+      'Bug fixes',
+      'Performance improvements',
+    ],
+    'ar': [
+      'تحسين الاستقرار',
+      'إصلاح الأخطاء',
+      'تحسينات في الأداء',
+    ],
+  },
+  '1.1.1': {
+    'en': [
+      'Added About screen with app info',
+      'Added What\'s New changelog',
+      'Added Check for Updates feature',
+      'Dynamic version display (no more hardcoded 1.0.0)',
+    ],
+    'ar': [
+      'إضافة شاشة "حول" بمعلومات التطبيق',
+      'إضافة سجل "ما الجديد"',
+      'إضافة ميزة "التحقق من وجود تحديثات"',
+      'عرض ديناميكي للإصدار (بدون قيمة ثابتة)',
+    ],
+  },
+  '1.1.0': {
+    'en': [
+      'Added WhatsApp status saver',
+      'Added dark/light theme support',
+      'Added Arabic and English localization',
+      'Added FFmpeg-based video + audio merge for HD downloads',
+      'Added splash screen',
+      'Added cache management in Settings',
+    ],
+    'ar': [
+      'إضافة حفظ حالات الواتساب',
+      'دعم الوضع الداكن/الفاتح',
+      'دعم اللغتين العربية والإنجليزية',
+      'دمج الفيديو والصوت بـ FFmpeg لتنزيلات HD',
+      'إضافة شاشة البداية',
+      'إدارة التخزين المؤقت في الإعدادات',
+    ],
+  },
+  '1.0.0': {
+    'en': [
+      'Initial release',
+      'Video downloader with link paste',
+      'Background downloads with pause/resume',
+      'Smart notifications',
+    ],
+    'ar': [
+      'الإصدار الأولي',
+      'تنزيل الفيديو عبر لصق الرابط',
+      'تنزيلات خلفية مع إيقاف/استئناف',
+      'إشعارات ذكية',
+    ],
+  },
 };
+
+/// Returns the changelog entries for [version] in the user's [locale].
+/// Falls back to English if the locale's language isn't available.
+List<String> changelogForVersion(String version, String locale) {
+  final entry = kChangelog[version];
+  if (entry == null) return const [];
+  return entry[locale] ?? entry['en'] ?? const [];
+}
 
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
@@ -64,7 +111,9 @@ class AboutScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           _InfoRow(
             label: l10n.aboutDevelopedBy,
-            value: l10n.aboutDeveloperName,
+            // 'mizofly' is a brand/handle name — keep it the same in all
+            // locales (do not translate).
+            value: 'mizofly',
             ext: ext,
           ),
           const Divider(height: 1, indent: 16, endIndent: 16),
@@ -198,6 +247,8 @@ class _WhatsNewScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final ext = VidSnapColorsExtension.of(context);
+    // Use the current locale's language code to pick the right changelog.
+    final locale = l10n.localeName;
 
     final allVersions = kChangelog.keys.toList()
       ..sort((a, b) => b.compareTo(a));
@@ -214,7 +265,7 @@ class _WhatsNewScreen extends StatelessWidget {
         itemCount: visibleVersions.length,
         itemBuilder: (ctx, i) {
           final v = visibleVersions[i];
-          final entries = kChangelog[v] ?? [];
+          final entries = changelogForVersion(v, locale);
           return _VersionSection(
             version: v,
             entries: entries,

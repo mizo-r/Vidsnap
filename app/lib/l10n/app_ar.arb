@@ -90,6 +90,7 @@
   "settingsClearData": "مسح كل بيانات التطبيق",
   "settingsClearDataConfirm": "مسح كل البيانات المحلية؟ لن تُحذف التنزيلات.",
   "settingsStorage": "التخزين",
+  "settingsSaved": "تم الحفظ",
   "settingsClearCache": "مسح التخزين المؤقت",
   "settingsClearCacheConfirm": "حذف كل ملفات الدمج المؤقتة والتنزيلات الجزئية؟",
   "settingsCacheSize": "حجم التخزين المؤقت الحالي",

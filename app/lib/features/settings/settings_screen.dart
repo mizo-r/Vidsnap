@@ -184,7 +184,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   keyboardType: TextInputType.url,
                 ),
                 const SizedBox(height: 8),
-                Row(
+                // Use Wrap instead of Row so buttons don't get squeezed
+                // when the Arabic label is longer than the English one.
+                // In RTL, Wrap also lays out children correctly without
+                // a Spacer that fights for space.
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     OutlinedButton.icon(
                       onPressed: _testingServer ? null : _testServer,
@@ -197,7 +204,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           : const Icon(Icons.network_check),
                       label: Text(l10n.settingsServerTest),
                     ),
-                    const SizedBox(width: 8),
                     FilledButton.icon(
                       onPressed: () async {
                         final url = _urlController.text.trim();
@@ -207,14 +213,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             .update((s) => s.copyWith(serverUrl: url));
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Saved')),
+                            SnackBar(content: Text(l10n.settingsSaved)),
                           );
                         }
                       },
                       icon: const Icon(Icons.save_outlined),
                       label: Text(l10n.commonSave),
                     ),
-                    const Spacer(),
                     if (_serverStatus == 'ok')
                       Icon(Icons.check_circle, color: ext.success, size: 20)
                     else if (_serverStatus == 'fail')

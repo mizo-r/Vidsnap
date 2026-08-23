@@ -93,6 +93,7 @@
   "settingsClearData": "Clear all app data",
   "settingsClearDataConfirm": "Clear all local data? Downloads will not be deleted.",
   "settingsStorage": "Storage",
+  "settingsSaved": "Saved",
   "settingsClearCache": "Clear cache",
   "settingsClearCacheConfirm": "Delete all temporary merge files and partial downloads?",
   "settingsCacheSize": "Current cache size",
