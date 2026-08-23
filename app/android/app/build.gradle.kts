@@ -10,12 +10,15 @@ plugins {
 
 android {
     namespace = "app.vidsnap.mobile"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Required by flutter_localizations + flutter_local_notifications
+        // (Android 13+ notification APIs need core library desugaring)
+        isCoreLibraryDesugaringEnabled = true
     }
 
     // New Kotlin compilerOptions DSL (replaces deprecated kotlinOptions { jvmTarget })
@@ -32,7 +35,7 @@ android {
     defaultConfig {
         applicationId = "app.vidsnap.mobile"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         // flutter.versionCode and flutter.versionName are properties
         // (not functions) in modern Flutter Gradle Plugin.
         versionCode = flutter.versionCode
@@ -73,4 +76,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Required by core library desugaring (Android 13+ notification APIs).
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
