@@ -67,12 +67,21 @@ jobs:
       - name: Set up Shorebird
         uses: shorebirdtech/setup-shorebird@v1
 
-      - name: Verify Shorebird installation
-        run: shorebird --version
+      - name: Verify Shorebird installation & expose Flutter
+        run: |
+          shorebird --version
+          FLUTTER_BIN_DIR=$(ls -d $HOME/.shorebird/bin/cache/flutter/*/bin 2>/dev/null | head -1)
+          if [ -z "$FLUTTER_BIN_DIR" ]; then
+            echo "::error::Could not find Flutter binary under shorebird install"
+            exit 1
+          fi
+          echo "Found Flutter at: $FLUTTER_BIN_DIR"
+          echo "$FLUTTER_BIN_DIR" >> $GITHUB_PATH
+
+      - name: Verify Flutter is on PATH
+        run: flutter --version
 
       - name: Download Flutter dependencies
-        # `flutter` here is the Flutter binary bundled with Shorebird
-        # (the setup-shorebird action adds it to PATH).
         run: flutter pub get
 
       - name: Generate localization files
