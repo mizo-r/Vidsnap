@@ -28,6 +28,7 @@ RUN npm prune --omit=dev
 FROM node:20-alpine AS runtime
 
 # Re-install the runtime system deps (yt-dlp + ffmpeg) in the slim runtime image.
+# `wget` is needed by the Docker HEALTHCHECK below.
 RUN apk add --no-cache python3 py3-pip ffmpeg wget \
     && pip install --no-cache-dir --break-system-packages yt-dlp \
     && yt-dlp --version
@@ -39,11 +40,19 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
 
+# Render sets the PORT env var automatically. Do NOT hardcode PORT here —
+# doing so would clash with Render's own port assignment and cause the
+# "x-render-routing: no-server" 404 response.
+# The app reads `process.env.PORT || 3000` at runtime (in src/index.ts).
 ENV NODE_ENV=production
-ENV PORT=3000
+
+# EXPOSE is informational only; Render ignores it and uses its own port.
+# We keep it for local `docker run` compatibility.
 EXPOSE 3000
 
+# HEALTHCHECK uses $PORT so it works both locally (PORT=3000 default) and
+# on Render (PORT set automatically by the platform).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
-  CMD wget -qO- http://localhost:3000/health || exit 1
+  CMD wget -qO- http://localhost:${PORT:-3000}/health || exit 1
 
 CMD ["node", "dist/index.js"]
