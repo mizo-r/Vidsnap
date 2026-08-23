@@ -94,13 +94,15 @@ jobs:
 
       # Build the patch. `--release-version` is optional; if not provided,
       # shorebird patches the most recent release for each platform.
-      # Use --allow-native-diffs / --allow-asset-diffs ONLY if you know
-      # what you're doing — patches cannot include native/asset changes.
+      # `--allow-asset-diffs` is needed because Flutter regenerates
+      # lib/l10n/gen/*.dart on every build — those show up as "asset changes"
+      # to Shorebird even though no real assets changed. They are safe to
+      # patch because the generated Dart is bundled with the code patch.
       - name: Build & publish Shorebird patch
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
         run: |
-          ARGS="patch android --platforms android --release-version=${{ inputs.release_version }}"
+          ARGS="patch android --platforms android --release-version=${{ inputs.release_version }} --allow-asset-diffs"
           echo "Running: shorebird $ARGS"
           shorebird $ARGS
 
