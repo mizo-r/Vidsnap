@@ -61,10 +61,12 @@ jobs:
         run: shorebird --version
 
       - name: Download Flutter dependencies
-        run: shorebird flutter pub get
+        # `flutter` here is the Flutter binary bundled with Shorebird
+        # (the setup-shorebird action adds it to PATH).
+        run: flutter pub get
 
       - name: Generate localization files
-        run: shorebird flutter gen-l10n
+        run: flutter gen-l10n
 
       - name: Verify localization generated
         run: |
