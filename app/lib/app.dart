@@ -29,16 +29,7 @@ class _VidSnapAppState extends ConsumerState<VidSnapApp> {
     });
 
     // Listen for restart signals (language change).
-    ref.read(restartSignalProvider.future).then((stream) {
-      stream.listen((_) {
-        if (mounted) {
-          setState(() {
-            _restartCounter++;
-          });
-        }
-      });
-    });
-
+    // ref.listen runs inside the widget lifecycle.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final settings = ref.read(settingsProvider);
       if (settings.clipboardMonitoringEnabled) {
@@ -53,12 +44,26 @@ class _VidSnapAppState extends ConsumerState<VidSnapApp> {
     super.dispose();
   }
 
+  void _handleRestart() {
+    if (mounted) {
+      setState(() {
+        _restartCounter++;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final themeMode = _parseThemeMode(settings.themeMode);
     final effectiveLanguage = resolveEffectiveLanguage(settings.language);
     final locale = Locale(effectiveLanguage);
+
+    // Listen to restart signal stream directly.
+    ref.listen<AsyncValue<void>>(restartSignalProvider, (previous, next) {
+      // When the stream emits a value, restart the app.
+      next.whenData((_) => _handleRestart());
+    });
 
     // _restartCounter is used as a key on MaterialApp.router so that
     // when it changes (language change), the entire widget tree is
