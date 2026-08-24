@@ -91,7 +91,7 @@ You can also trigger the workflow manually from the Actions tab → "Build APK" 
 
   ⚠️ **Keep `vidsnap.jks` in a safe offline location.** If you lose it, you cannot update the app for users who already installed it — Android will reject the new APK as a different app.
 
-  **Add the secrets at:** https://github.com/mizo-r/Vidsnap/settings/secrets/actions
+  **Add the secrets at:** https://github.com/mizofly/Vidsnap/settings/secrets/actions
 
 ## License
 

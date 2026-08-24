@@ -409,7 +409,7 @@ class _CheckUpdatesScreenState extends ConsumerState<_CheckUpdatesScreen> {
       final currentVersion = info.version;
 
       final response = await _dio.get<dynamic>(
-        'https://api.github.com/repos/mizo-r/Vidsnap/releases/latest',
+        'https://api.github.com/repos/mizofly/Vidsnap/releases/latest',
       );
 
       if (response.statusCode != 200) {
