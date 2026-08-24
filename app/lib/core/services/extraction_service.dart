@@ -19,8 +19,10 @@ class ExtractionService {
       '$normalizedUrl/extract',
       data: {'url': videoUrl},
       options: Options(
-        sendTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 60),
+        // Render Free Tier sleeps after 15 min of inactivity and takes
+        // ~30s to wake up on the first request. Give it plenty of time.
+        sendTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 120),
         headers: {'Content-Type': 'application/json'},
       ),
     );
@@ -38,8 +40,9 @@ class ExtractionService {
       final response = await _dio.get(
         '$normalizedUrl/health',
         options: Options(
-          sendTimeout: const Duration(seconds: 8),
-          receiveTimeout: const Duration(seconds: 8),
+          // Render Free Tier takes ~30s to wake up. Allow 60s to be safe.
+          sendTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
         ),
       );
       return response.statusCode == 200;
