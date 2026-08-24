@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vidsnap/core/providers/settings_provider.dart';
 import 'package:vidsnap/data/models/extract_response.dart';
 import 'package:vidsnap/data/repositories/settings_repository.dart';
 
@@ -69,7 +70,7 @@ final extractionServiceProvider = Provider<ExtractionService>((ref) {
   return ExtractionService(ref.watch(dioProvider));
 });
 
-/// Convenience: returns the current server URL.
+/// Convenience: returns the current server URL from settingsProvider.
 final serverUrlProvider = Provider<String>((ref) {
-  return ref.watch(settingsRepositoryProvider).current.serverUrl;
+  return ref.watch(settingsProvider).serverUrl;
 });

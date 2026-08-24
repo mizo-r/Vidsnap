@@ -1,15 +1,14 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:vidsnap/app.dart';
 import 'package:vidsnap/core/constants/colors.dart';
+import 'package:vidsnap/core/providers/app_info_provider.dart';
+import 'package:vidsnap/core/providers/settings_provider.dart';
 import 'package:vidsnap/core/services/download_service.dart';
 import 'package:vidsnap/core/services/extraction_service.dart';
 import 'package:vidsnap/core/utils/format_utils.dart';
 import 'package:vidsnap/data/repositories/download_repository.dart';
 import 'package:vidsnap/data/repositories/history_repository.dart';
-import 'package:vidsnap/data/repositories/settings_repository.dart';
 import 'package:vidsnap/features/about/about_screen.dart';
 import 'package:vidsnap/l10n/gen/app_localizations.dart';
 
@@ -49,12 +48,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final ext = VidSnapColorsExtension.of(context);
-    final settings = ref.watch(currentSettingsProvider);
+    final settings = ref.watch(settingsProvider);
+
     // Initialize the URL controller ONCE with the saved value.
-    // Re-assigning .text on every rebuild would overwrite the user's
-    // in-progress edits whenever setState fires (e.g. after pressing
-    // "Test"), causing their URL to revert to the saved value before
-    // they could press "Save".
+    // On subsequent rebuilds (e.g. after pressing "Save" or "Test"),
+    // we do NOT overwrite the controller — the user might be mid-edit.
+    // When the user navigates away and comes back, the State is recreated,
+    // _urlInitialized resets to false, and the controller picks up the
+    // latest saved value from settingsProvider.
     if (!_urlInitialized) {
       _urlController.text = settings.serverUrl;
       _urlInitialized = true;
@@ -78,7 +79,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
               onChanged: (v) async {
                 if (v == null) return;
-                await ref.read(settingsRepositoryProvider).update((s) => s.copyWith(language: v));
+                await ref.read(settingsProvider.notifier).update((s) => s.copyWith(language: v));
               },
             ),
           ),
@@ -94,7 +95,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
               onChanged: (v) async {
                 if (v == null) return;
-                await ref.read(settingsRepositoryProvider).update((s) => s.copyWith(themeMode: v));
+                await ref.read(settingsProvider.notifier).update((s) => s.copyWith(themeMode: v));
               },
             ),
           ),
@@ -104,23 +105,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: Text(settings.defaultSaveFolder),
             trailing: const Icon(Icons.chevron_right, size: 20),
             onTap: () async {
-              // Open the system directory picker so the user can choose
-              // any path on the device (internal storage, SD card, etc.).
               final picked = await FilePicker.platform.getDirectoryPath();
               if (picked == null) return;
-              await ref
-                  .read(settingsRepositoryProvider)
-                  .update((s) => s.copyWith(defaultSaveFolder: picked));
+              await ref.read(settingsProvider.notifier).update((s) => s.copyWith(defaultSaveFolder: picked));
             },
           ),
-          // Quick reset to the default public path
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Align(
               alignment: AlignmentDirectional.centerStart,
               child: TextButton.icon(
                 onPressed: () async {
-                  await ref.read(settingsRepositoryProvider).update(
+                  await ref.read(settingsProvider.notifier).update(
                         (s) => s.copyWith(defaultSaveFolder: 'Vidsnap/download'),
                       );
                 },
@@ -140,9 +136,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   .toList(),
               onChanged: (v) async {
                 if (v == null) return;
-                await ref
-                    .read(settingsRepositoryProvider)
-                    .update((s) => s.copyWith(maxConcurrentDownloads: v));
+                await ref.read(settingsProvider.notifier).update((s) => s.copyWith(maxConcurrentDownloads: v));
               },
             ),
           ),
@@ -152,9 +146,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: Text(l10n.settingsClipboardMonitoringDesc),
             value: settings.clipboardMonitoringEnabled,
             onChanged: (v) async {
-              await ref
-                  .read(settingsRepositoryProvider)
-                  .update((s) => s.copyWith(clipboardMonitoringEnabled: v));
+              await ref.read(settingsProvider.notifier).update((s) => s.copyWith(clipboardMonitoringEnabled: v));
             },
           ),
           SwitchListTile(
@@ -163,9 +155,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: Text(l10n.settingsNotificationsDesc),
             value: settings.notificationsEnabled,
             onChanged: (v) async {
-              await ref
-                  .read(settingsRepositoryProvider)
-                  .update((s) => s.copyWith(notificationsEnabled: v));
+              await ref.read(settingsProvider.notifier).update((s) => s.copyWith(notificationsEnabled: v));
             },
           ),
           _SectionHeader(l10n.settingsServer, ext),
@@ -184,10 +174,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   keyboardType: TextInputType.url,
                 ),
                 const SizedBox(height: 8),
-                // Use Wrap instead of Row so buttons don't get squeezed
-                // when the Arabic label is longer than the English one.
-                // In RTL, Wrap also lays out children correctly without
-                // a Spacer that fights for space.
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -208,9 +194,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       onPressed: () async {
                         final url = _urlController.text.trim();
                         if (url.isEmpty) return;
-                        await ref
-                            .read(settingsRepositoryProvider)
-                            .update((s) => s.copyWith(serverUrl: url));
+                        // Persist to Hive AND update state synchronously.
+                        await ref.read(settingsProvider.notifier).update(
+                              (s) => s.copyWith(serverUrl: url),
+                            );
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(l10n.settingsSaved)),
@@ -276,9 +263,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   );
                   if (confirmed != true) return;
-                  final freed = await ref
-                      .read(downloadServiceProvider)
-                      .clearAllTempFiles();
+                  final freed = await ref.read(downloadServiceProvider).clearAllTempFiles();
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -288,14 +273,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         backgroundColor: VidSnapColors.success,
                       ),
                     );
-                    setState(() {}); // refresh size
+                    setState(() {});
                   }
                 },
               );
             },
           ),
           _SectionHeader(l10n.settingsAbout, ext),
-          // About VidSnap — opens the dedicated About screen.
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: Text(l10n.aboutTitle),
@@ -306,12 +290,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               );
             },
           ),
-          // Version — read dynamically from package_info_plus so it always
-          // matches the actual installed version (no more hardcoded '1.0.0').
-          FutureBuilder<PackageInfo>(
-            future: PackageInfo.fromPlatform(),
-            builder: (context, snapshot) {
-              final version = snapshot.data?.version ?? '...';
+          // Version — read dynamically from package_info_plus.
+          Consumer(
+            builder: (context, ref, _) {
+              final version = ref.watch(appVersionProvider);
               return ListTile(
                 leading: const Icon(Icons.tag),
                 title: Text(l10n.settingsVersion),
@@ -348,7 +330,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               if (confirmed != true) return;
               await ref.read(downloadRepositoryProvider).clearAll();
               await ref.read(historyRepositoryProvider).clearAll();
-              await ref.read(settingsRepositoryProvider).reset();
+              await ref.read(settingsProvider.notifier).reset();
             },
           ),
         ],

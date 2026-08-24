@@ -6,32 +6,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vidsnap/core/constants/colors.dart';
+import 'package:vidsnap/core/providers/app_info_provider.dart';
 import 'package:vidsnap/l10n/gen/app_localizations.dart';
-
-/// Provider that fetches the package info (version, build number, etc.)
-/// asynchronously. Cached after the first successful load.
-final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
-  return await PackageInfo.fromPlatform();
-});
 
 /// Hardcoded changelog entries per version, per language.
 /// New versions add their entry at the top of the list.
 /// This keeps the changelog accessible offline and avoids an extra
 /// network call just to show release notes.
 const Map<String, Map<String, List<String>>> kChangelog = {
-  '1.1.2': {
+  '1.1.3': {
     'en': [
-      'Improved stability',
-      'Bug fixes',
-      'Performance improvements',
+      'Fixed settings not persisting after navigation',
+      'Removed Shorebird (was not applying patches reliably)',
+      'Added video thumbnails for WhatsApp statuses',
+      'Dynamic version display everywhere',
+      'RTL layout fixes for Arabic',
     ],
     'ar': [
-      'تحسين الاستقرار',
-      'إصلاح الأخطاء',
-      'تحسينات في الأداء',
+      'إصلاح مشكلة عدم حفظ الإعدادات بعد التنقل',
+      'إزالة Shorebird (لم يكن يطبّق التحديثات بشكل موثوق)',
+      'إضافة صور مصغّرة لفيديوهات حالات الواتساب',
+      'عرض ديناميكي لرقم النسخة في كل مكان',
+      'إصلاحات تخطيط RTL للعربية',
     ],
   },
-  '1.1.1': {
+  '1.1.2': {
     'en': [
       'Added About screen with app info',
       'Added What\'s New changelog',
@@ -43,6 +42,18 @@ const Map<String, Map<String, List<String>>> kChangelog = {
       'إضافة سجل "ما الجديد"',
       'إضافة ميزة "التحقق من وجود تحديثات"',
       'عرض ديناميكي للإصدار (بدون قيمة ثابتة)',
+    ],
+  },
+  '1.1.1': {
+    'en': [
+      'Improved stability',
+      'Bug fixes',
+      'Performance improvements',
+    ],
+    'ar': [
+      'تحسين الاستقرار',
+      'إصلاح الأخطاء',
+      'تحسينات في الأداء',
     ],
   },
   '1.1.0': {
@@ -94,13 +105,7 @@ class AboutScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final ext = VidSnapColorsExtension.of(context);
-    final asyncInfo = ref.watch(packageInfoProvider);
-
-    final version = asyncInfo.when(
-      data: (info) => info.version,
-      loading: () => '...',
-      error: (_, __) => '1.0.0',
-    );
+    final version = ref.watch(appVersionProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.aboutTitle)),
@@ -111,8 +116,6 @@ class AboutScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           _InfoRow(
             label: l10n.aboutDevelopedBy,
-            // 'mizofly' is a brand/handle name — keep it the same in all
-            // locales (do not translate).
             value: 'mizofly',
             ext: ext,
           ),
@@ -437,12 +440,7 @@ class _CheckUpdatesScreenState extends ConsumerState<_CheckUpdatesScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final ext = VidSnapColorsExtension.of(context);
-    final asyncInfo = ref.watch(packageInfoProvider);
-    final currentVersion = asyncInfo.when(
-      data: (info) => info.version,
-      loading: () => '...',
-      error: (_, __) => '1.0.0',
-    );
+    final currentVersion = ref.watch(appVersionProvider);
 
     final updateAvailable = _latestVersion != null &&
         _isNewer(_latestVersion!, currentVersion);

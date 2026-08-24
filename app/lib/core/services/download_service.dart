@@ -672,7 +672,6 @@ class DownloadService {
 
 final downloadServiceProvider = Provider<DownloadService>((ref) {
   final dio = Dio();
-  // Disable FFmpegKit statistics logging (keeps logcat clean).
   FFmpegKitConfig.disableLogs();
   final service = DownloadService(
     dio: dio,

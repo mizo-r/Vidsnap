@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vidsnap/core/constants/colors.dart';
+import 'package:vidsnap/core/services/video_thumbnail_service.dart';
 import 'package:vidsnap/core/services/whatsapp_status_service.dart';
 import 'package:vidsnap/data/models/whatsapp_status.dart';
 import 'package:vidsnap/features/whatsapp/status_preview_screen.dart';
@@ -339,21 +340,78 @@ class _StatusTile extends StatelessWidget {
   }
 }
 
-class _Thumbnail extends StatelessWidget {
+class _Thumbnail extends StatefulWidget {
   const _Thumbnail({required this.status});
   final WhatsAppStatus status;
 
   @override
+  State<_Thumbnail> createState() => _ThumbnailState();
+}
+
+class _ThumbnailState extends State<_Thumbnail> {
+  String? _thumbPath;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThumbnail();
+  }
+
+  Future<void> _loadThumbnail() async {
+    if (widget.status.isVideo) {
+      final path = await VideoThumbnailService().getThumbnail(widget.status.filePath);
+      if (mounted) {
+        setState(() {
+          _thumbPath = path;
+          _loading = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final file = File(status.filePath);
-    if (status.isVideo) {
-      // For videos, we don't have an easy way to extract a frame without
-      // a video thumbnailer package. Show a placeholder with the file icon.
+    final file = File(widget.status.filePath);
+
+    if (widget.status.isVideo) {
+      // For videos, show the extracted thumbnail (or a loading/placeholder)
+      if (_loading) {
+        return Container(
+          color: Colors.black26,
+          child: const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+            ),
+          ),
+        );
+      }
+      if (_thumbPath != null) {
+        return Image.file(
+          File(_thumbPath!),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            color: Colors.black26,
+            child: const Icon(Icons.video_library, color: Colors.white54, size: 32),
+          ),
+        );
+      }
+      // Thumbnail generation failed — show video icon as fallback
       return Container(
         color: Colors.black26,
         child: const Icon(Icons.video_library, color: Colors.white54, size: 32),
       );
     }
+
+    // For images, show the image directly
     return Image.file(
       file,
       fit: BoxFit.cover,
