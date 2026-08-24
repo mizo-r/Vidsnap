@@ -15,6 +15,12 @@ const CACHE_TTL_SECONDS = Number(process.env.CACHE_TTL_SECONDS || 300);
 
 const app = express();
 
+// Render (and most cloud providers) use a reverse proxy that sets the
+// X-Forwarded-For header. Without 'trust proxy', express-rate-limit
+// throws a ValidationError and crashes the request (502 to the client).
+// Setting it to 1 trusts the first proxy hop (Render's load balancer).
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(express.json({ limit: '32kb' }));
 
