@@ -79,7 +79,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
               onChanged: (v) async {
                 if (v == null) return;
-                await ref.read(settingsProvider.notifier).update((s) => s.copyWith(language: v));
+                // Language change requires full app restart (RTL/LTR rebuild).
+                // Show a brief feedback before restart kicks in.
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        v == 'ar'
+                            ? 'جارٍ إعادة التشغيل بالعربية...'
+                            : v == 'en'
+                                ? 'Restarting in English...'
+                                : 'Restarting with system language...',
+                      ),
+                      duration: const Duration(milliseconds: 800),
+                    ),
+                  );
+                }
+                await ref.read(settingsProvider.notifier).changeLanguage(v);
               },
             ),
           ),

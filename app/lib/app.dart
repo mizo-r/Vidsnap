@@ -18,6 +18,7 @@ class VidSnapApp extends ConsumerStatefulWidget {
 
 class _VidSnapAppState extends ConsumerState<VidSnapApp> {
   late final ClipboardMonitorService _clipboard;
+  int _restartCounter = 0;
 
   @override
   void initState() {
@@ -26,6 +27,18 @@ class _VidSnapAppState extends ConsumerState<VidSnapApp> {
     _clipboard.detectedUrls.listen((url) {
       ref.read(notificationServiceProvider).showClipboardDetected(url: url);
     });
+
+    // Listen for restart signals (language change).
+    ref.read(restartSignalProvider.future).then((stream) {
+      stream.listen((_) {
+        if (mounted) {
+          setState(() {
+            _restartCounter++;
+          });
+        }
+      });
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final settings = ref.read(settingsProvider);
       if (settings.clipboardMonitoringEnabled) {
@@ -47,7 +60,11 @@ class _VidSnapAppState extends ConsumerState<VidSnapApp> {
     final effectiveLanguage = resolveEffectiveLanguage(settings.language);
     final locale = Locale(effectiveLanguage);
 
+    // _restartCounter is used as a key on MaterialApp.router so that
+    // when it changes (language change), the entire widget tree is
+    // rebuilt from scratch — forcing a fresh splash → home flow.
     return MaterialApp.router(
+      key: ValueKey('vidsnap_app_$_restartCounter'),
       title: 'VidSnap',
       debugShowCheckedModeBanner: false,
       theme: buildLightTheme(),

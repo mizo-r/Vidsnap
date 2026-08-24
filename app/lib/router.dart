@@ -65,10 +65,19 @@ class _ScaffoldWithNav extends StatelessWidget {
     final index = _indexForLocation(location);
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      body: child,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        child: KeyedSubtree(
+          key: ValueKey('page_$index'),
+          child: child,
+        ),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (i) => context.go(_pathForIndex(i)),
+        animationDuration: const Duration(milliseconds: 300),
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.home_outlined),

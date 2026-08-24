@@ -14,6 +14,22 @@ import 'package:vidsnap/l10n/gen/app_localizations.dart';
 /// This keeps the changelog accessible offline and avoids an extra
 /// network call just to show release notes.
 const Map<String, Map<String, List<String>>> kChangelog = {
+  '1.1.4': {
+    'en': [
+      'Polished splash screen with multi-stage animation',
+      'App restarts when language is changed (proper RTL rebuild)',
+      'Smooth page transitions with AnimatedSwitcher',
+      'Increased server timeouts for Render cold starts',
+      'Visual polish across all screens',
+    ],
+    'ar': [
+      'شاشة بداية مصقولة بأنيميشن متعدد المراحل',
+      'إعادة تشغيل التطبيق عند تغيير اللغة (إعادة بناء RTL صحيحة)',
+      'انتقالات سلسة بين الصفحات',
+      'زيادة مهلة السيرفر لاستيقاظ Render',
+      'تحسينات بصرية عبر كل الشاشات',
+    ],
+  },
   '1.1.3': {
     'en': [
       'Fixed settings not persisting after navigation',
